@@ -1,0 +1,8 @@
+cd $1
+ln *.output logfile
+grep flops logfile | grep A  > flops ; echo " " >> flops
+grep flops logfile | grep B >> flops ; echo " " >> flops
+grep flops logfile | grep X >> flops ; echo " " >> flops
+
+cat flops
+cd ..
