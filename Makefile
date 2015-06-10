@@ -1,25 +1,41 @@
-S       = .
+S     = .
+L     = 
+X     = 
+CC    = mpicc
+F77   = mpif77
+P     = -fdefault-real-8 -fdefault-double-8 -x f77-cpp-input
 
-CC      = mpi
-CFLAGS  = -std=c99
+FLAGS = -g -O0 -mcmodel=medium #-fbacktrace #-Wall -Og
 
-FC      = mpif77
-FCFLAGS = -fdefault-real-8 -fdefault-double-8 -x f77-cpp-input \
-          -g -O0 -mcmodel=medium #-fbacktrace #-Wall -Og
+CFLAGS   = -std=c99
+FFLAGS   = #-c
 
-NOBJS   = comm_mpi.o x2p.o
+NOBJS = comm_mpi.o x2p.o 
+NOBJSC = comm_mpi.ox2pc.o
+NOBJSNDT = comm_mpi.o x2pNDT.o
 
-##############################################################################
+all: f
 
-x2p: $(NOBJS)
-	$(F77) $(FCFLAGS) -o x2p $(NOBJS)
-x2p.o: x2p.f MGRID
-	$(F77) $(FCFLAGS) -c x2p.f
-comm_mpi.o: comm_mpi.f
-	$(F77) $(FCFLAGS) -c comm_mpi.f
+f:	$(NOBJS)
+	$(F77) $(FFLAGS) -o x2p $(NOBJS) $(FLAGS)
 
-##############################################################################
+c:	$(NOBJSC)
+	$(CC) $(CFLAGS) -o x2pc $(NOBJSC) $(FLAGS)
 
-.PHONY: clean
+NDT:	$(NOBJSNDT)
+	$(F77) $(FFLAGS) -o x2pNDT $(NOBJSNDT) $(FLAGS)
+
+#x2p:	$(NOBJS)
+#	$(F77) -o x2p $(NOBJS) $(FLAGS)
+
+#x2pc:	$(NOBJS)
+#	$(CC) -o x2pc $(NOBJSC) $(FLAGS)
+
 clean:
-	rm -f $(NOBJS) x2p
+	-'rm' $(NOBJS) $(NOBJSC) x2p x2pc
+
+x2p.o   	: x2p.f 	; $(F77) -c $P $(FLAGS)  x2p.f 
+comm_mpi.o   	: comm_mpi.f 	; $(F77) -c $P $(FLAGS)  comm_mpi.f 
+x2pNDT.o	: x2pNDT.f	; $(F77) -c $P $(FLAGS)  x2pNDT.f
+x2pc.o   	: x2p.c 	; $(CC) -c $P $(FLAGS)  x2p.c 
+#comm_mpi.o   	: comm_mpi.c 	; $(CC) -c $P $(FLAGS)  comm_mpi.c 
