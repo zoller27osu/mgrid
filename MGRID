@@ -8,7 +8,7 @@
 
       common/ cstart   / istx,isty,istz,iedx,iedy,iedz
      $                 , mx,my,mz,nx,ny,nz
-     $                 , lev,nlev, ipass
+     $                 , lev,nlev, ipass, npass
 
       common/ ctags    / mtagsl,mtagsr,mtagsd,mtagsu,mtagsb,mtagsf
       common/ ctagr    / mtagrl,mtagrr,mtagrd,mtagru,mtagrb,mtagrf

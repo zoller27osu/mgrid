@@ -15,6 +15,15 @@ c
 c     nsmooth - number of times to smooth
 c
 c-----------------------------------------------------------------------
+
+!#define verify_xchange
+!#define verify_jacobi_alts
+
+#define NPASS_DEFAULT 1000
+#define NSMOOTH_DEFAULT 21
+#define IGS_DEFAULT 2
+#define SIGMA_DEFAULT 0.66666666666666667
+
       program mgrid_test
       include 'MGRID'
 
@@ -26,7 +35,6 @@ c-----------------------------------------------------------------------
       integer nlev_last
       save    nlev_last
       data    nlev_last /0/
-
 
       call init_proc   ! Initialize parallel mode
 
@@ -60,9 +68,7 @@ c-----------------------------------------------------------------------
       common /cflag/ tflag,dmflag
       common /cinit/ icalld
 
-     !
-      IPASS_MAX = 1000
-     !
+      character ig_labels(5)
 
       call init_mg(nsmooth,igs,sigma)       ! Get current mg parameters
 
@@ -108,38 +114,41 @@ c-----------------------------------------------------------------------
       h   = 1./n
       kf  = 0
 
-      if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+      imx = mx
+      imy = my
+      imz = mz
       call dmesh(mm,n) ! calculates mx, my, mz
-      if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
-
-      !call erase_3d_types(LRtype, UDtype)
-      !call make_3d_types(mx+1, my+1, mz+1, mgreal, LRtype, UDtype)
-      call erase_3d_types()
-      call make_3d_types(mx+1, my+1, mz+1, mgreal)
+      if ((imx.ne.mx).OR.(imy.ne.my).OR.(imz.ne.mz)) then
+        !if (nid.eq.0) write(6,*) nid, ": imx, imy, imz = ", imx, imy, imz
+        !if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+        call erase_3d_types()
+        call make_3d_types(mx+1, my+1, mz+1, mgreal)
+      endif
 
       iz=1
 
       dmax = 0.
 
 c     ========    Test Alts    =========
+#ifdef verify_jacobi_alts
       call test_alts(u(kf),r(kf),h,sigma,nsmooth,rf,iz,2,4) ! last 2 parameters are min/max "igs"
+#endif
 
       call gsync
       time0 = dclock()
       !if (nid.eq.0) write(6,*) time0
       !if (nid.eq.0) write(6,"(F15.3)") time0
-      do ipass=1,IPASS_MAX
-         call smooth_q  (u(kf),r(kf),mx,my,mz,h
-     &                          ,sigma,nsmooth,rf,iz,igs,ldim)
+      do ipass=1,npass
+         call smooth_q (u(kf),r(kf),mx,my,mz,h,sigma,nsmooth,rf,iz)
       enddo
       time1 = dclock()
-      if (nid.eq.0) write(6,*) time0, time1
+      if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q')
 
       call gsync
       time0 = dclock()
       !if (nid.eq.0) write(6,*) time0
-      do ipass=1,IPASS_MAX
+      do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,2,ldim)
          call xchange0  (u(kf))
@@ -151,7 +160,7 @@ c     ========    Test Alts    =========
       call gsync
       time0 = dclock()
       !if (nid.eq.0) write(6,*) time0
-      do ipass=1,IPASS_MAX
+      do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,3,ldim)
          call xchange0  (u(kf))
@@ -163,7 +172,7 @@ c     ========    Test Alts    =========
       call gsync
       time0 = dclock()
       !if (nid.eq.0) write(6,*) time0
-      do ipass=1,IPASS_MAX
+      do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,4,ldim)
          call xchange0  (u(kf))
@@ -175,7 +184,7 @@ c     ========    Test Alts    =========
       call gsync
       time0 = dclock()
       !if (nid.eq.0) write(6,*) time0
-      do ipass=1,IPASS_MAX
+      do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,0,ldim)
          call xchange0  (u(kf))
@@ -186,7 +195,7 @@ c     ========    Test Alts    =========
 
       call gsync
       time0 = dclock()
-      do ipass=1,IPASS_MAX/5
+      do ipass=1,npass/5
 
         lev = nlev
         nf  = 2**lev
@@ -311,7 +320,7 @@ c-----------------------------------------------------------------------
 
       n3 = nx*ny
       if (ldim.eq.3) n3=n3*nz
-      if (nid.eq.0) then
+      if (nid.eq.1) then
         write(6,*) 
      $"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
      $" nz          n3       mp   mq   mr       np          c1"
@@ -327,7 +336,7 @@ c-----------------------------------------------------------------------
       fflops = (cflops+pflops+rflops+rrlops)
       if (time.gt.0) fflops = fflops/(time*1.e6)
 
-      if (nid.eq.0) then
+      if (nid.eq.1) then
         write(6,*)
      $"   ii   emx         time        fflops      cflops      pflops ",
      $"     rflops      rrlops               n3           np      c1"
@@ -467,19 +476,21 @@ c-----------------------------------------------------------------------
       if (nid.eq.0) then
         if (icalld.eq.0) open(unit=9,file='in.dat')
         nlev = 0
-        nsmooth = 0
-        igs = 0
-        sigma = 0
-        read (9,*,end=999)  nlev,nsmooth,igs,sigma
+        npass = NPASS_DEFAULT
+        nsmooth = NSMOOTH_DEFAULT
+        igs = IGS_DEFAULT
+        sigma = SIGMA_DEFAULT
+        read (9,*,end=999)  nlev,npass,nsmooth,igs,sigma
         nlev = min(nlev_max,nlev)
-        write(6,*) 'Input nlev, nsmooth, igs, sigma:'
-        write(6,*)  nlev,nsmooth,igs,sigma
+        write(6,*) 'Input nlev, npass, nsmooth, igs, sigma:'
+        write(6,*)  nlev,npass,nsmooth,igs,sigma
   999   if (nlev.eq.0) write(6,*) 'nlev = 0, stopping!'
       endif
 
       icalld = 1
 
       call bcast(nlev   ,     4) ! 4-byte integer
+      call bcast(npass  ,     4)
       call bcast(nsmooth,     4)
       call bcast(igs    ,     4)
       call bcast(sigma  ,wdsize)
@@ -1277,7 +1288,7 @@ c     ======= In this original version, u never contains any boundary data! ====
         cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
       endif
 
-      write(6,*) nid, " m, izero, mx, my, mz = ", m, izero, mx, my, mz
+      !write(6,*) nid, " m, izero, mx, my, mz = ", m, izero, mx, my, mz
 
       !iters = 0
       mm1 = (mx+1)*(my+1)*(mz+1)
@@ -1693,7 +1704,6 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine test_alts(ukf,rkf,h,sigma,nsmooth,rf,iz,minIg,maxIg)
-      !USE Comm_Funcs, ONLY : arreq
       USE Comm_Funcs, ONLY : mateq
       include 'MGRID'
       real ukf(1), rkf(1), rf(1)
@@ -1701,12 +1711,9 @@ c-----------------------------------------------------------------------
 
       !if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
 
-      mxyzP1 = (mx+1)*(my+1)
-      mxyzM1 = (mx-1)*(my-1) ! we're not including boundary conditions
-
+      mxyz1 = (mx+1)*(my+1)
       if (ldim.eq.3) then
-        mxyzP1 = mxyzP1*(mz+1)
-        mxyzM1 = mxyzM1*(mz-1)
+        mxyz1 = mxyz1*(mz+1)
       endif
 
       !call smooth_m(ukf,rkf,mx,my,mz,h,sigma,nsmooth,rf,iz,minIg,ldim)
@@ -1717,8 +1724,8 @@ c-----------------------------------------------------------------------
       endif
 
       do nsmoth = nsmooth, nsmooth+1
-        call copy(rfc,rf,mxyzP1)
-        call copy(v,ukf,mxyzP1)
+        call copy(rfc,rf,mxyz1)
+        call copy(v,ukf,mxyz1)
         !call gsync
         call smooth_m(v,rkf,mx,my,mz,h,sigma,nsmoth,rfc,iz,0,ldim)
         if (nid.eq.6) then
@@ -1726,14 +1733,13 @@ c-----------------------------------------------------------------------
           !call print_3d(v, 11, 2, 2)
         endif
         do ig = minIg, maxIg
-          call copy(rfc,rf,mxyzP1)
-          call copy(w,ukf,mxyzP1)
+          call copy(rfc,rf,mxyz1)
+          call copy(w,ukf,mxyz1)
           call gsync
           call smooth_m(w,rkf,mx,my,mz,h,sigma,nsmoth,rfc,iz,ig,ldim)
 
+#ifdef verify_jacobi_alts
           if (nid.eq.6) then
-            !if (arreq(v(1:mx-1,1:my-1,1:mz-1)
-     &      !          ,w(1:mx-1,1:my-1,1:mz-1),mxyzM1)) then
             if (mateq(v,w,0)) then
               write(6,*) nid, ": igs = ", ig, " matches result of "
      &          , "igs = 0 for nsmooth = ", nsmoth, "!"
@@ -1747,8 +1753,11 @@ c-----------------------------------------------------------------------
               call print_3d(w(1:mx-1,1:my-1,1:mz-1), 11, 2, 2)
             endif
           endif
+#endif
         enddo
+#ifdef verify_jacobi_alts
         if (nid.eq.6) write(6,*) " "
+#endif
       enddo
       end
 c-----------------------------------------------------------------------
@@ -2253,7 +2262,7 @@ c     return
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_q (u,r,mx,my,mz,h,sigma,m,uo,iz,igs,ndim)! m sweep
+      subroutine smooth_q (u,r,mx,my,mz,h,sigma,m,uo,iz)! m sweep
       real u(1),r(1),uo(1)
 
       call smooth_m_jac3d_q(u,r,mx,my,mz,h,sigma,m,uo,iz)

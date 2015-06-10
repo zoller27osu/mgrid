@@ -381,9 +381,12 @@ c-----------------------------------------------------------------------
           if ((i.eq.0).OR.(i.eq.mx)) atbound = atbound + 1
           if (i.eq.1) atbound = atbound - 1
           if (atbound.gt.mnb) cycle
-          write(6,1) nid,mnb,i,mx,j,my,k,mz
-    1 format(i3,": mnb=",i2," atbound=",i2," i,j,k=",i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4)
-          if (nid.eq.6) write(6,*) nid, ":", mnb, i, j, k
+          if (nid.eq.6) then
+            !write(6,1) nid,mnb,i,mx,j,my,k,mz
+    1       !format(i3,": mnb=",i2," atbound=",i2," i,j,k="
+     $      !   ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4)
+          endif
+          !if (nid.eq.6) write(6,*) nid, ":", mnb, i, j, k
           if (a(i,j,k).ne.b(i,j,k)) then
             if (nid.eq.6) then
               write(6,*) "different at",i,j,k
