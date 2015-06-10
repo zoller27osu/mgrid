@@ -1,6 +1,0 @@
-mkdir $1
-cp x2p $1
-cp in.dat $1
-cd $1
-cqsub -n $1 -m vn -p Autoignition_esp -q prod -e BG_MAPPING=TXYZ -t 0:40:00 -O `pwd`'/'$1 x2p &
-cd ..
