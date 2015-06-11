@@ -1,3 +1,8 @@
+!#define catch_mpi_errs
+!#define waitall_statuses
+
+!#define use_tags !if commented, sources will be used
+
 c-----------------------------------------------------------------------
       subroutine init_proc
       include 'mpif.h'
@@ -26,18 +31,29 @@ c     set mpi real type-
         write(6, *) "MPI_Wtick: ", wtick
       endif
 
+#ifdef catch_mpi_errs
+      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+     $                                  ,MPI_ERRORS_RETURN,ier)
+      call gsync
+#endif
+
+      LRtype = 0
+      UDtype = 0
+      FBtype = 0
+
       return
       end
 c-----------------------------------------------------------------------
-      subroutine make_3d_types(mx1,my1,mz1,iOldType)!,LRtype,UDtype)
+      subroutine make_3d_types(mx1,my1,mz1,iOldType,enable_FBtype)!,LRtype,UDtype)
       include 'MGRID'
+      logical :: enable_FBtype
 
-      FBtype = 0
+      !FBtype = 0
       call MPI_TYPE_VECTOR(my1*mz1, 1, mx1, iOldType, LRtype, ierr)
       call MPI_TYPE_COMMIT(LRtype, ierr)
       call MPI_TYPE_VECTOR(mz1, mx1, mx1*my1, iOldType, UDtype, ierr)
       call MPI_TYPE_COMMIT(UDtype, ierr)
-      if (0.eq.1) then ! make false to safely disable FBtype
+      if (enable_FBtype) then
         call MPI_TYPE_CONTIGUOUS(mx1*my1, iOldType, FBtype, ierr)
         call MPI_TYPE_COMMIT(FBtype, ierr)
       endif
@@ -51,8 +67,8 @@ c-----------------------------------------------------------------------
 
       !integer :: LRtype, UDtype
 
-      call MPI_TYPE_FREE(LRtype, ierr)
-      call MPI_TYPE_FREE(UDtype, ierr)
+      if (LRtype.ne.0) call MPI_TYPE_FREE(LRtype, ierr)
+      if (UDtype.ne.0) call MPI_TYPE_FREE(UDtype, ierr)
       if (FBtype.ne.0) call MPI_TYPE_FREE(FBtype, ierr)
       LRtype = 0
       UDtype = 0
@@ -123,7 +139,6 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine gsync() !Why does this method even exist?
-
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize !Why?
       integer wdsize
@@ -140,9 +155,9 @@ c-----------------------------------------------------------------------
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
 
-      integer status(mpi_status_size)
+      integer status(MPI_STATUS_SIZE)
 
-      if (imsg.eq.mpi_request_null) return
+      if (imsg.eq.MPI_REQUEST_NULL) return
 
 c     write(6,*) nid,' msgwait:',imsg
       call mpi_wait (imsg,status,ierr)
@@ -167,6 +182,9 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine exitt
+
+      !call erase_3d_types(LRtype, UDtype) ! erases the MPI datatypes used in xchange
+      call erase_3d_types()
 
       call gsync
       call mpi_finalize (ierr)
@@ -267,7 +285,10 @@ c-----------------------------------------------------------------------
       integer wdsize
       !real*4 buf(1)
 
-      if ((msgtag.lt.0).or.(jnid.lt.0).or.(jnid.ge.np)) return
+      if ((msgtag.lt.0).or.(jnid.lt.0).or.(jnid.ge.np)) then
+	      isend1 = MPI_REQUEST_NULL	
+	      return
+      endif
 
       call mpi_isend(x,num,itype,jnid,msgtag,MPI_COMM_WORLD,isend1,ierr)
 
@@ -278,16 +299,24 @@ c-----------------------------------------------------------------------
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
+#ifdef catch_mpi_errs
+      character str(MPI_MAX_ERROR_STRING)
+#endif
 
 c     Note: len in bytes
 
       if (msgtag.lt.0) then
-         irecv1 = mpi_request_null
+        irecv1 = MPI_REQUEST_NULL
       else
-         !write(6,*) nid, ": posting recv with tag = ", msgtag
-         call mpi_irecv (x,num,itype,mpi_any_source,msgtag
+        !write(6,*) nid, ": posting recv with tag = ", msgtag
+        call mpi_irecv (x,num,itype,mpi_any_source,msgtag
      $                    ,MPI_COMM_WORLD,irecv1,ierr)
-         !irecv1 = imsg
+#ifdef catch_mpi_errs
+        if (ierr.ne.MPI_SUCCESS) then
+          call MPI_Error_string(ierr,str,lenres,ierr)
+          write(6,*) nid, ": ", str
+        endif
+#endif
       endif
 
 c     write(6,*) nid,' irecv:',imsg,msgtag,len
@@ -295,36 +324,154 @@ c     write(6,*) nid,' irecv:',imsg,msgtag,len
       return
       end function
 c-----------------------------------------------------------------------
+      function irecv2(msgtag,x,itype,num,jnid) ! return if msgtag < 0
+      include 'mpif.h'
+      common /cmgmpi/ nid,np,mgreal,wdsize
+      integer wdsize
+#ifdef catch_mpi_errs
+      character str(MPI_MAX_ERROR_STRING)
+#endif
+
+c     Note: len in bytes
+
+#ifdef catch_mpi_errs
+      ierr = MPI_SUCCESS
+#endif
+#ifdef use_tags
+      if (msgtag.lt.0) then
+        irecv2 = MPI_REQUEST_NULL
+      else
+        !write(6,*) nid, ": posting recv with tag = ", msgtag
+        call mpi_irecv (x,num,itype,MPI_ANY_SOURCE,msgtag
+     $                    ,MPI_COMM_WORLD,irecv2,ierr)
+      endif
+#else
+      if (jnid.eq.MPI_PROC_NULL) then
+        irecv2 = MPI_REQUEST_NULL
+      else
+        !write(6,*) nid, ": posting recv with src = ", jnid
+        call mpi_irecv (x,num,itype,jnid,MPI_ANY_TAG
+     $                    ,MPI_COMM_WORLD,irecv2,ierr)
+      endif
+#endif
+#ifdef catch_mpi_errs
+      if (ierr.ne.MPI_SUCCESS) then
+        call MPI_Error_string(ierr,str,lenres,ierr)
+        write(6,*) nid, ": ", str
+      endif
+#endif
+
+c     write(6,*) nid,' irecv:',imsg,msgtag,len
+
+      return
+      end function
+c-----------------------------------------------------------------------
+      subroutine msgwait1(imsg)
+      include 'mpif.h'
+      common /cmgmpi/ nid,np,mgreal,wdsize
+      integer wdsize
+
+      integer imsg
+#ifdef catch_mpi_errs
+      character str(MPI_MAX_ERROR_STRING)
+#endif
+#ifdef waitall_statuses
+      integer status(MPI_STATUS_SIZE)
+#endif
+
+      !if (imsg.eq.mpi_request_null) return
+
+c     write(6,*) nid,' msgwait:',imsg
+!#ifdef catch_mpi_errs
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                                    ,MPI_ERRORS_RETURN,ier)
+!      call gsync
+!#endif
+      !write(6,*) nid, ": ", imsg
+#ifdef waitall_statuses
+      call MPI_Wait(imsg,status,ierr)
+#else
+      call MPI_Wait(imsg,MPI_STATUS_IGNORE,ierr)
+#endif
+#ifdef catch_mpi_errs
+      if (ierr.ne.MPI_SUCCESS) then
+        !if (nid.ne.0) then
+        !do
+        !enddo
+        !endif
+
+        call MPI_Error_string(ierr,str,lenres,ierr)
+        write(6,*) nid, ": ", str
+#ifdef waitall_statuses
+        if (status(MPI_ERROR).ne.MPI_SUCCESS) then
+          write(6,*) nid, ": status(", i, ") error = "
+          call MPI_Error_string(status(MPI_ERROR),str,lenres,ierr)
+          write(6,*) nid, ": ", str
+        endif
+#endif
+        stop
+
+      endif
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                             ,MPI_ERRORS_ARE_FATAL,ierr)
+!      call gsync
+#endif
+
+      return
+      end
+c-----------------------------------------------------------------------
       subroutine msgwaitall(imsgs,num)
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
 
       integer imsgs(num)
-      integer statuses(MPI_STATUS_SIZE,num)
+#ifdef catch_mpi_errs
       character str(MPI_MAX_ERROR_STRING)
+#endif
+#ifdef waitall_statuses
+      integer statuses(MPI_STATUS_SIZE,num)
+#endif
 
       !if (imsg.eq.mpi_request_null) return
 
 c     write(6,*) nid,' msgwait:',imsg
-      call MPI_Comm_set_errhandler(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ier)
+!#ifdef catch_mpi_errs
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                                    ,MPI_ERRORS_RETURN,ier)
+!      call gsync
+!#endif
+       !write(6,*) nid, ": "
+#ifdef waitall_statuses
       call MPI_Waitall(num,imsgs,statuses,ierr)
+#else
+      call MPI_Waitall(num,imsgs,MPI_STATUSES_IGNORE,ierr)
+#endif
+#ifdef catch_mpi_errs
       if (ierr.ne.MPI_SUCCESS) then
-        call MPI_Error_string(ierr,str,reslen,ierr)
+        !if (nid.ne.0) then
+        !do
+        !enddo
+        !endif
+
+        call MPI_Error_string(ierr,str,lenres,ierr)
         write(6,*) nid, ": ", str
+#ifdef waitall_statuses
         do i = 1,num
           if (statuses(MPI_ERROR,i).ne.MPI_SUCCESS) then
             write(6,*) nid, ": status(", i, ") error = "
-            call MPI_Error_string(statuses(MPI_ERROR,i),str,reslen,ierr)
+            call MPI_Error_string(statuses(MPI_ERROR,i),str,lenres,ierr)
             write(6,*) nid, ": ", str
           endif
         enddo
-
+#endif
         stop
 
       endif
-      call MPI_Comm_set_errhandler(MPI_COMM_WORLD
-     &                             ,MPI_ERRORS_ARE_FATAL,ierr)
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                             ,MPI_ERRORS_ARE_FATAL,ierr)
+!      call gsync
+#endif
 
       return
       end
@@ -382,14 +529,14 @@ c-----------------------------------------------------------------------
           if (i.eq.1) atbound = atbound - 1
           if (atbound.gt.mnb) cycle
 
-          if (nid.eq.6) then
-            !write(6,1) nid,mnb,i,mx,j,my,k,mz
-    1       !format(i3,": mnb=",i2," atbound=",i2," i,j,k="
+          !if (nid.eq.6) then
+            !write(6,17) nid,mnb,i,mx,j,my,k,mz
+   17       !format(i3,": mnb=",i2," atbound=",i2," i,j,k="
      $      !   ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4)
-          endif
-          !if (nid.eq.6) write(6,*) nid, ":", mnb, i, j, k
+          !endif
 
-          if (a(i,j,k).ne.b(i,j,k)) then
+          if ((a(i,j,k).ne.b(i,j,k)).OR.ISNAN(a(i,j,k))
+     $                              .OR.ISNAN(b(i,j,k))) then
             if (nid.eq.6) then
               write(6,*) "different at",i,j,k
      $                    ,"(",a(i,j,k),"vs",b(i,j,k),")"

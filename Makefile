@@ -5,14 +5,13 @@ CC    = mpicc
 F77   = mpif77
 P     = -fdefault-real-8 -fdefault-double-8 -x f77-cpp-input
 
-FLAGS = -g -O0 -mcmodel=medium #-fbacktrace #-Wall -Og
+FLAGS = -g -O3 -mcmodel=medium -fbacktrace #-Wall -Og
 
 CFLAGS   = -std=c99
 FFLAGS   = #-c
 
 NOBJS = comm_mpi.o x2p.o 
 NOBJSC = comm_mpi.ox2pc.o
-NOBJSNDT = comm_mpi.o x2pNDT.o
 
 all: f
 
@@ -21,9 +20,6 @@ f:	$(NOBJS)
 
 c:	$(NOBJSC)
 	$(CC) $(CFLAGS) -o x2pc $(NOBJSC) $(FLAGS)
-
-NDT:	$(NOBJSNDT)
-	$(F77) $(FFLAGS) -o x2pNDT $(NOBJSNDT) $(FLAGS)
 
 #x2p:	$(NOBJS)
 #	$(F77) -o x2p $(NOBJS) $(FLAGS)
@@ -36,6 +32,5 @@ clean:
 
 x2p.o   	: x2p.f 	; $(F77) -c $P $(FLAGS)  x2p.f 
 comm_mpi.o   	: comm_mpi.f 	; $(F77) -c $P $(FLAGS)  comm_mpi.f 
-x2pNDT.o	: x2pNDT.f	; $(F77) -c $P $(FLAGS)  x2pNDT.f
 x2pc.o   	: x2p.c 	; $(CC) -c $P $(FLAGS)  x2p.c 
 #comm_mpi.o   	: comm_mpi.c 	; $(CC) -c $P $(FLAGS)  comm_mpi.c 

@@ -154,6 +154,7 @@ c-----------------------------------------------------------------------
       return
       end
 
+              ! previously in arreq
               ioff = -1
               if (n.gt.((mx-1)*(my-1)*(mz-1))) ioff = 1
               k = MIN(mz+ioff, idx/((mx+ioff)*(my+ioff)) + 1)
@@ -161,3 +162,48 @@ c-----------------------------------------------------------------------
               j = MIN(my+ioff, i/(mx+ioff) + 1)
               i = i - (mx+ioff) * (j-1)
               write(6,*) "different at",i,j,k,"(",a(idx),"vs",b(idx),")"
+
+! previously in xchange0 -----------------------------------------------
+      if (ldim.eq.2) call xchange_2d(u,b1,b2,bo)
+      if (ldim.eq.3) then
+#ifdef verify_xchange
+        mxyz = (mx+1)*(my+1)*(mz+1)
+        call copy(v,u,mxyz)             ! must be done by all processes
+        call xchange_3d_old(v,b1,b2,bo) ! to xchange results successfully
+#endif
+#ifdef xchange_async
+	      call xchange_3d_async(u)
+#else
+        call xchange_3d(u)
+        !call xchange_3d_old(u,b1,b2,bo)
+#endif
+#ifdef verify_xchange
+        if ((nid.eq.6)) then!.or.(nid.eq.7)) then
+          if (mateq(u,v,1)) then ! the 1 means we only want to compare elements that are at the boundary in at most 1 dimensions
+            !write(6,*) nid, ": xchange with datatypes is working!"
+          else
+            write(6,*) nid, ": new xchange is not working..."
+            write(6,*) nid, ": old is "
+            call print_3d(v, 5, 2, 2)
+            write(6,*) nid, ": new is "
+            call print_3d(u, 5, 2, 2)
+
+            call exit(11) ! Y U NO SEGFAULT?!?!?!
+
+          endif
+        endif
+#endif
+      endif
+
+      !if (nid.eq.6) then
+        !call print_3d(u, 5, 2, 2)
+        !write(6, '(8F8.4)') "u: ", real(u(0:mx, 0, 0))
+        !write(6, '(8F8.4)') "v: ", real(v(0:mx, 0, 0))
+        !write(6,*) "u:", real(u(0:3, 0, 1))
+        !write(6,*) "v:", real(v(0:3, 0, 1))
+        !write(6,*) " "
+      !endif
+ 
+      return
+      end
+

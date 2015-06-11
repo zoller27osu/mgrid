@@ -16,10 +16,16 @@ c     nsmooth - number of times to smooth
 c
 c-----------------------------------------------------------------------
 
-!#define verify_xchange
-!#define verify_jacobi_alts
+#define XCHANGE_JGX 2
+#define JAC3D_JGX 0
+#define enable_FBtype
 
-#define NPASS_DEFAULT 1000
+!#define verify_jacobi_alts
+#define verify_xchange
+
+!#define conservative_mpi_dtype_recreate
+
+#define NPASS_DEFAULT 100
 #define NSMOOTH_DEFAULT 21
 #define IGS_DEFAULT 2
 #define SIGMA_DEFAULT 0.66666666666666667
@@ -68,9 +74,9 @@ c-----------------------------------------------------------------------
       common /cflag/ tflag,dmflag
       common /cinit/ icalld
 
-      character ig_labels(5)
+      !character ig_labels(5)
 
-      call init_mg(nsmooth,igs,sigma)       ! Get current mg parameters
+      call init_mg(npass,nsmooth,igs,sigma)       ! Get current mg parameters
 
       if (nlev.le.nlev_last) return
       nlev_last = nlev
@@ -88,23 +94,17 @@ c-----------------------------------------------------------------------
 
       call dmesh     (mm,n) ! calculates mx, my, mz
 
-     !
-      !call make_3d_types(mx+1, my+1, mz+1, mgreal, LRtype, UDtype) ! makes MPI datatypes for xchange!
-      call make_3d_types(mx+1, my+1, mz+1, mgreal) ! makes MPI datatypes for xchange!
-     !
-      !if (nid.eq.0) write(6,*) LRtype, UDtype
-
       call rzero     (u ,mm)                    ! clear u
       call rzero     (r ,mm)                    ! clear r
       call rzero     (rf,mm)                    ! clear rf
       call rzero     (ue,mm)                    ! clear ue
 
       call initu     (ue,n,h,ldim)              ! Exact solution (Get exact solution in ue?)
-      call xchange0  (ue)                       ! share ue
+      call xchange0  (ue,XCHANGE_JGX)           ! share ue
 
       call compute_r (r,ue,rf,mx,my,mz,h,ldim)  ! b = 0 - A ue
       call chsign    (r,mm)                     ! b = A ue
-      call xchange0  (r)                        ! share r? (Why?)
+      call xchange0  (r,XCHANGE_JGX)            ! share r? (Why?)
 
       tol   = 1.e-10
 
@@ -114,88 +114,129 @@ c-----------------------------------------------------------------------
       h   = 1./n
       kf  = 0
 
-      imx = mx
-      imy = my
-      imz = mz
       call dmesh(mm,n) ! calculates mx, my, mz
-      if ((imx.ne.mx).OR.(imy.ne.my).OR.(imz.ne.mz)) then
-        !if (nid.eq.0) write(6,*) nid, ": imx, imy, imz = ", imx, imy, imz
-        !if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
-        call erase_3d_types()
-        call make_3d_types(mx+1, my+1, mz+1, mgreal)
-      endif
 
       iz=1
 
       dmax = 0.
 
-c     ========    Test Alts    =========
+c     ======== Test Jacobi Alts =========
 #ifdef verify_jacobi_alts
       call test_alts(u(kf),r(kf),h,sigma,nsmooth,rf,iz,2,4) ! last 2 parameters are min/max "igs"
 #endif
 
+c     ======== Test Xchange Alts=========
+#ifdef verify_xchange
+      call test_xchange(u,1,2) ! last 2 parameters are min/max "jgx"
+#endif
+
+
+c     ========   Time Xchange  =========
       call gsync
       time0 = dclock()
-      !if (nid.eq.0) write(6,*) time0
-      !if (nid.eq.0) write(6,"(F15.3)") time0
+      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.1) write(6,"(F15.3)") time0
+      do ipass=1,npass*200
+         call xchange0(u,2)
+      enddo
+      call gsync
+      time1 = dclock()
+      if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
+
+      call gsync
+      time0 = dclock()
+      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.1) write(6,"(F15.3)") time0
+      do ipass=1,npass*200
+         call xchange0(u,1)
+      enddo
+      call gsync
+      time1 = dclock()
+      if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
+
+      call gsync
+      time0 = dclock()
+      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.1) write(6,"(F15.3)") time0
+      do ipass=1,npass*200
+         call xchange0(u,0)
+      enddo
+      call gsync
+      time1 = dclock()
+      !if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'O') !xchange_3d_old
+      if (nid.eq.1) write(6,*) " "
+
+c     ========    Time Alts    =========
+      call gsync
+      time0 = dclock()
+      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.1) write(6,"(F15.3)") time0
       do ipass=1,npass
          call smooth_q (u(kf),r(kf),mx,my,mz,h,sigma,nsmooth,rf,iz)
       enddo
+      call gsync
       time1 = dclock()
       if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q')
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q') !smooth_q
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.0) write(6,*) time0
+      !if (nid.eq.1) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,2,ldim)
-         call xchange0  (u(kf))
+         call xchange0  (u(kf),XCHANGE_JGX)
       enddo
+      call gsync
       time1 = dclock()
-      !if (nid.eq.0) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A')
+      !if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A') !jac3alt
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.0) write(6,*) time0
+      !if (nid.eq.1) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,3,ldim)
-         call xchange0  (u(kf))
+         call xchange0  (u(kf),XCHANGE_JGX)
       enddo
+      call gsync
       time1 = dclock()
-      !if (nid.eq.0) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'C')
+      !if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'C') !jac3cnd
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.0) write(6,*) time0
+      !if (nid.eq.1) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,4,ldim)
-         call xchange0  (u(kf))
+         call xchange0  (u(kf),XCHANGE_JGX)
       enddo
+      call gsync
       time1 = dclock()
-      !if (nid.eq.0) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F')
+      !if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.0) write(6,*) time0
+      !if (nid.eq.1) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,0,ldim)
-         call xchange0  (u(kf))
+         call xchange0  (u(kf),XCHANGE_JGX)
       enddo
+      call gsync
       time1 = dclock()
-      !if (nid.eq.0) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'J')
+      !if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'J') !jac3d
 
       call gsync
       time0 = dclock()
-      do ipass=1,npass/5
+      do ipass=1,NPASS_DEFAULT/5 ! Weird NaN stuff in rf happens when this number gets too high!
 
         lev = nlev
         nf  = 2**lev
@@ -215,10 +256,19 @@ c     ========    Test Alts    =========
 
             call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,igs,ldim)
-            call xchange0  (u(kf))
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !if (nid.eq.6) write(6, *) nid, ": xchanging u(kf)",__LINE__
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            call xchange0  (u(kf),XCHANGE_JGX)
 
             call compute_r (rf,u(kf),r(kf),mx,my,mz,h,ldim)
-            call xchange0  (rf)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !if (nid.eq.6) then
+            !  write(6, *) nid,": xchanging rf",__LINE__,"kf,lt=",kf,lt
+            !  call print_3d(rf, 5, 2, 2)
+            !endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            call xchange0  (rf,XCHANGE_JGX)
 
             lev     = lev-1
             kf      = kf + mm
@@ -243,7 +293,10 @@ c     ========    Test Alts    =========
         call smooth_m(u(kf),r(kf),mx,my,mz,h
      &                              ,one,1,rf,iz,igs,ldim)
         call reset_mtags (lev+1)  ! Exchange on prior level processor set
-        call xchange0    (u(kf))
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !if (nid.eq.6) write(6, *) nid, ": xchanging u(kf)", __LINE__
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        call xchange0    (u(kf),XCHANGE_JGX)
 
         kc = kf
         nf = n*2
@@ -268,7 +321,10 @@ c     ========    Test Alts    =========
            call prolong_a (u(kf),dmax,u(kc),mxc,myc,mzc
      $                                ,ieven,jeven,keven,ldim) 
            call reset_mtags (lev+1)  ! Exchange on prior level processor set
-           call xchange0    (u(kf))
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           !if (nid.eq.6) write(6, *) nid, ": xchanging u(kf)", __LINE__
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           call xchange0    (u(kf),XCHANGE_JGX)
 
            n  = n*2
            h  = 1./n
@@ -293,9 +349,6 @@ c        endif
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'X')
 c     call outmp(u ,ipass,lev,'SOLN',rf,r)
 c     call outmp(ue,ipass,lev,'EXAC',rf,r)
-
-      !call erase_3d_types(LRtype, UDtype) ! erases the MPI datatypes used in xchange
-      call erase_3d_types()
 
       return
       end
@@ -466,8 +519,7 @@ c-----------------------------------------------------------------------
       return
       end
 c-----------------------------------------------------------------------
-      subroutine init_mg(nsmooth,igs,sigma)! Get current mg parameters
-
+      subroutine init_mg(npass,nsmooth,igs,sigma)! Get current mg parameters
       include 'MGRID'
       common /cinit/ icalld
      
@@ -580,7 +632,7 @@ c      Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
 c      But neighbor is not adjacent processor
 c 
       
-c      if (nid.eq.0) write(6,*) lev,nlev,ipass,nx,' level'
+c      if (nid.eq.1) write(6,*) lev,nlev,ipass,nx,' level'
 
        call find_neighb (jpx,ip,mp,nx, 1) ! Right Neighbor
        call get_gid     (gid,jpx, iq, ir,mp,mq,mr)
@@ -719,7 +771,6 @@ c-----------------------------------------------------------------------
 
 c     Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
  
-
       mtags = nid       ! Send 
       mtagr = gid       ! Receive
       if (mtagr.lt.0) mtags = -1
@@ -728,15 +779,15 @@ c     Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
       end
 c-----------------------------------------------------------------------
       subroutine get_gid(gid,ip,iq,ir,mp,mq,mr)
+      include 'mpif.h'
       integer gid
 c     ===========  Assign global numbering =======
       mpq = mp*mq
       
-      gid = -1
+      gid = MPI_PROC_NULL !-1
       if (0.le.ip.and.ip.lt.mp.and.    ! Inside Box
      $    0.le.iq.and.iq.lt.mq.and.
      $    0.le.ir.and.ir.lt.mr      )  gid = ip + iq*mp + ir*mpq
-
 
       return
       end
@@ -753,6 +804,12 @@ c     This routine calculates mx,my,mz and their global start indx
 c  
 c     Partitions nx points across mp procs
 c     mx is number of element per proc (0---mx)
+
+#ifdef conservative_mpi_dtype_recreate
+      imx = mx
+      imy = my
+      imz = mz
+#endif      
 
       nx   = n ! Total number of active points in x-dir
       ny   = n !                                  y-dir
@@ -803,6 +860,22 @@ c     mx is number of element per proc (0---mx)
 
       call mtag  ! Recompute message tags for case mx < mp, etc
 
+
+#ifdef conservative_mpi_dtype_recreate
+      if ((imx.ne.mx).OR.(imy.ne.my).OR.(imz.ne.mz)) then
+        !if (nid.eq.1) write(6,*) nid, ": imx, imy, imz = ", imx, imy, imz
+        !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+#endif
+        call erase_3d_types()
+#ifdef enable_FBtype
+        call make_3d_types(mx+1, my+1, mz+1, mgreal, .TRUE.)  ! makes MPI datatypes for xchange!
+#else
+        call make_3d_types(mx+1, my+1, mz+1, mgreal, .FALSE.) ! makes MPI datatypes for xchange!
+#endif
+#ifdef conservative_mpi_dtype_recreate
+      endif
+#endif
+
 c     call out_mgrid
 
       return
@@ -827,7 +900,7 @@ c-----------------------------------------------------------------------
       if (ndim.eq.2) call initu_2d(u,n,h)
       if (ndim.eq.3) call initu_3d(u,n,h)
 
-      call xchange0  (u)
+      call xchange0  (u,XCHANGE_JGX)
 
       return
       end
@@ -1184,7 +1257,7 @@ c-----------------------------------------------------------------------
           call smooth_m_jac2d(u,r,mx,my,h,sigma,m,uo,iz)
         elseif (igs.eq.1) then
           call smooth_m_gs_2d(u,r,mx,my,h,sigma,m,iz)
-        elseif (nid.eq.0) then
+        elseif (nid.eq.1) then
           write(6, *) nid, ": no smooth_m func ",
      $      "corresponding to igs = ", igs, "!"
         endif
@@ -1203,9 +1276,10 @@ c-----------------------------------------------------------------------
           call smooth_m_jac3idx(u,r,mx,my,mz,h,sigma,m,uo,iz)
        ! elseif (igs.eq.6) then
        !   call smooth_m_jac3swp(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (nid.eq.0) then
+        elseif (nid.eq.1) then
           write(6, *) nid, ": no smooth_m func ",
      $      "corresponding to igs = ", igs, "!"
+          call exitt
         endif
       endif
 
@@ -1231,7 +1305,7 @@ c-----------------------------------------------------------------------
       mm1 = (my+1)*(mx+1)
       do i_sweep = 2,m+izero
         call copy     (o,u,mm1) ! Old copy, w/ boundary data
-        call xchange0 (o)
+        call xchange0 (o,XCHANGE_JGX)
 
         do j=1,my-1
         do i=1,mx-1
@@ -1245,11 +1319,11 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
 c     ======= Calculation is independent of u =======
-      subroutine jac3d_helper (ix,iy,iz,u,o,r,h2,sa) ! Jacobi helper
+      subroutine jac3d_helper (ix,iy,iz,u,o,r,h2,sa,jgx) ! Jacobi helper
       include 'MGRID'
       real, dimension(0:mx,0:my,0:mz) :: u, r, o
       
-      call xchange0(o) ! tile prev u
+      call xchange0(o,jgx) ! tile prev u
 
       do k=1,mz-1
       do j=1,my-1
@@ -1302,7 +1376,7 @@ c     ======= In this original version, u never contains any boundary data! ====
           !call print_3d(o, 11, 2, 2)
         endif
 
-        call jac3d_helper(mx,my,mz,u,o,r,h2,sa) ! u gets new "u"
+        call jac3d_helper(mx,my,mz,u,o,r,h2,sa,JAC3D_JGX) ! u gets new "u"
 
         if (nid.eq.6) then
           !write(6,*) nid, ": xchanged o = "
@@ -1342,13 +1416,13 @@ c-----------------------------------------------------------------------
       !iters = 0
       i_end = (m+izero-2+1)/2+1
       do i_sweep = 2,i_end
-        call jac3d_helper(mx,my,mz,o,u,r,h2,sa) ! prev "u" = u, o will get new "u"
-        call jac3d_helper(mx,my,mz,u,o,r,h2,sa) ! prev "u" = o, u will get new "u"
+        call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
         !iters = iters+2
       enddo
 
       if (MOD(m+izero-2+1,2).ne.0) then
-        call jac3d_helper(mx,my,mz,o,u,r,h2,sa) ! prev "u" = u, o will get new "u"
+        call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
         mm1 = (mx+1)*(my+1)*(mz+1)
         call copy (u,o,mm1)                     ! u needs newest "u", which is in o
         !iters = iters+1
@@ -1384,9 +1458,9 @@ c-----------------------------------------------------------------------
       f = .TRUE. ! means u was last updated
       do i_sweep = 2,m+izero
         if (f) then
-          call jac3d_helper(mx,my,mz,o,u,r,h2,sa)
+          call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX)
         else
-          call jac3d_helper(mx,my,mz,u,o,r,h2,sa)
+          call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX)
         end if
         f = .NOT.f
       enddo
@@ -1421,9 +1495,9 @@ c-----------------------------------------------------------------------
 
       do i_sweep = 2,m+izero
         if (MOD(i_sweep,2).eq.0) then
-          call jac3d_helper(mx,my,mz,o,u,r,h2,sa)
+          call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX)
         else
-          call jac3d_helper(mx,my,mz,u,o,r,h2,sa)
+          call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX)
         end if
       enddo
       cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
@@ -1476,7 +1550,7 @@ c-----------------------------------------------------------------------
       do i_sweep = 2,m+izero
 
         !call copy    (o,u,mm1) ! Old copy, w/ boundary data
-        call xchange0(uo(io,:,:,:))
+        call xchange0(uo(io,:,:,:),XCHANGE_JGX)
 
         do k=1,mz-1
         do j=1,my-1
@@ -1696,7 +1770,7 @@ c-----------------------------------------------------------------------
       do k=0,iz
         write(6, *) "k = ", k
         do j=0,iy
-          write(6, '(1000F9.4)') real(u(0:ix, j, k))
+          write(6, '(1000F16.4)') real(u(0:ix, j, k))
           !write(6,*) real(u(:mx-1, j, k))
         enddo
       enddo
@@ -1704,16 +1778,18 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine test_alts(ukf,rkf,h,sigma,nsmooth,rf,iz,minIg,maxIg)
+#ifdef verify_jacobi_alts
       USE Comm_Funcs, ONLY : mateq
+#endif
       include 'MGRID'
       real ukf(1), rkf(1), rf(1)
       real, dimension(0:mx,0:my,0:mz) :: rfc, v, w
 
-      !if (nid.eq.0) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+      !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
 
-      mxyz1 = (mx+1)*(my+1)
+      mm1 = (mx+1)*(my+1)
       if (ldim.eq.3) then
-        mxyz1 = mxyz1*(mz+1)
+        mm1 = mm1*(mz+1)
       endif
 
       !call smooth_m(ukf,rkf,mx,my,mz,h,sigma,nsmooth,rf,iz,minIg,ldim)
@@ -1724,8 +1800,8 @@ c-----------------------------------------------------------------------
       endif
 
       do nsmoth = nsmooth, nsmooth+1
-        call copy(rfc,rf,mxyz1)
-        call copy(v,ukf,mxyz1)
+        call copy(rfc,rf,mm1)
+        call copy(v,ukf,mm1)
         !call gsync
         call smooth_m(v,rkf,mx,my,mz,h,sigma,nsmoth,rfc,iz,0,ldim)
         if (nid.eq.6) then
@@ -1733,24 +1809,24 @@ c-----------------------------------------------------------------------
           !call print_3d(v, 11, 2, 2)
         endif
         do ig = minIg, maxIg
-          call copy(rfc,rf,mxyz1)
-          call copy(w,ukf,mxyz1)
-          call gsync
+          call copy(rfc,rf,mm1)
+          call copy(w,ukf,mm1)
+          !call gsync
           call smooth_m(w,rkf,mx,my,mz,h,sigma,nsmoth,rfc,iz,ig,ldim)
 
 #ifdef verify_jacobi_alts
           if (nid.eq.6) then
-            if (mateq(v,w,0)) then
+            if (mateq(v,w,0)) then ! the 0 excludes the faces from the comparison
               write(6,*) nid, ": igs = ", ig, " matches result of "
-     &          , "igs = 0 for nsmooth = ", nsmoth, "!"
+     $          , "igs = 0 for nsmooth = ", nsmoth, "!"
             else
               write(6,*) nid, ": igs = ", ig, " gave a different"
-     &          , " result than igs = 0 for nsmooth = ", nsmoth
-     &          , " (not including boundary data!):"
-              write(6,*) nid, ": result of igs = 0:"
-              call print_3d(v(1:mx-1,1:my-1,1:mz-1), 11, 2, 2)
+     $          , " result than igs = 0 for nsmooth = ", nsmoth
+     $          , " (not including faces!):"
+              write(6,*) nid, ": result of igs = 0 (not including faces):"
+              call print_3d(v(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
               write(6,*) nid, ": result of igs = ", ig, ":"
-              call print_3d(w(1:mx-1,1:my-1,1:mz-1), 11, 2, 2)
+              call print_3d(w(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
             endif
           endif
 #endif
@@ -1761,48 +1837,75 @@ c-----------------------------------------------------------------------
       enddo
       end
 c-----------------------------------------------------------------------
-      subroutine xchange0(u) ! Zeros out boundary data
+      subroutine test_xchange(u,minJg,maxJg)
       USE Comm_Funcs, ONLY : mateq
 
+      include 'MGRID'
+      real u(1)
+      real, dimension(0:mx,0:my,0:mz) :: v, w
+
+      !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+
+      mm1 = (mx+1)*(my+1)
+      if (ldim.eq.3) then
+        mm1 = mm1*(mz+1)
+      endif
+
+      !call smooth_m(ukf,rkf,mx,my,mz,h,sigma,nsmooth,rf,iz,minIg,ldim)
+
+      if (nid.eq.6) then
+        !write(6,*) nid, ": original u:"
+        !call print_3d(u, 11, 2, 2)
+      endif
+
+      call copy(v,u,mm1)
+      !call gsync
+      call xchange0(v,0)
+      !if (nid.eq.6) then
+        !write(6,*) nid, ": v = "
+        !call print_3d(v, 11, 2, 2)
+      !endif
+      do jg = minJg, maxJg
+        call copy(w,u,mm1)
+        !call gsync
+        call xchange0(w,jg)
+
+        if ((nid.eq.6)) then!.or.(nid.eq.7)) then
+          if (mateq(v,w,1)) then ! the 1 means we only want to compare elements that are at the boundary in at most 1 dimensions (e.g. cube faces, but no edges)
+            !write(6,*) nid,": jgx = ",jg," matches result of jgx = 0!"
+          else
+            write(6,*) nid, ": jgx = ", jg, " gave a different"
+     $        , " result than jgx = 0 (not including edges!):"
+            write(6,*) nid, ": result of jgx = 0:"
+            call print_3d(v, 5, 2, 2)
+            write(6,*) nid, ": result of jgx =", jgx, ":"
+            call print_3d(w, 5, 2, 2)
+          endif
+        endif
+      enddo
+      end
+c-----------------------------------------------------------------------
+      subroutine xchange0(u, jgx) ! Zeros out boundary data
       include 'MGRID'
       parameter (lb=(lx+2)**(ldim-1))
       common /cbuff/ b1(lb),b2(lb),bo(lb)
 
-      real u(1) ! essentially "real *u" from c, allows passing to arreq
-      real v(0:mx,0:my,0:mz)
+      real u(1) ! essentially "real *u" from c, allows typed passing
 
-      if (nid.eq.6) then
-        !call print_3d(u, 11, 2, 2)
-        !write(6,*) real(u(0:3, 0, 1))
-      endif
-
-      if (ldim.eq.2) call xchange_2d(u,b1,b2,bo)
-      if (ldim.eq.3) then
-        mxyz = (mx+1)*(my+1)*(mz+1)
-        call copy(v,u,mxyz)             ! must be done by all processes
-        call xchange_3d_old(v,b1,b2,bo) ! to xchange results successfully
-	      !call xchange_3d(u)
-	      call xchange_3d_async(u)
-        if ((nid.eq.6)) then!.or.(nid.eq.7)) then
-          if (mateq(u,v,1)) then ! the 1 means we only want to compare elements that are at the boundary in at most 1 dimensions
-            !write(6,*) nid, ": xchange with datatypes is working!"
-          else
-            write(6,*) nid, ": new xchange is not working..."
-            write(6,*) nid, ": old is "
-            call print_3d(v, 11, 2, 2)
-            write(6,*) nid, ": new is "
-            call print_3d(u, 11, 2, 2)
-          endif
+      if (ldim.eq.2) then
+        call xchange_2d(u,b1,b2,bo)
+      else
+        if (jgx.eq.0) then
+          call xchange_3d_old(u,b1,b2,bo)
+        elseif (jgx.eq.1) then
+          call xchange_3d(u)
+        elseif (jgx.eq.2) then
+	        call xchange_3d_async(u)
+        elseif (nid.eq.1) then
+          write(6, *) nid, ": no xchange0 func ",
+     $      "corresponding to jgx = ", jgx, "!"
+          call exitt
         endif
-      endif
-
-      if (nid.eq.6) then
-        !call print_3d(u, 11, 2, 2)
-        !write(6, '(8F8.4)') "u: ", real(u(0:mx, 0, 0))
-        !write(6, '(8F8.4)') "v: ", real(v(0:mx, 0, 0))
-        !write(6,*) "u:", real(u(0:3, 0, 1))
-        !write(6,*) "v:", real(v(0:3, 0, 1))
-        !write(6,*) " "
       endif
  
       return
@@ -1812,6 +1915,12 @@ c-----------------------------------------------------------------------
       include 'MGRID'
       real u(0:mx,0:my,0:mz)
       integer reqs(12)
+      !do i = 1,12
+      !  reqs(i) = MPI_Request_Null
+      !enddo
+
+      !write(6,*) nid, ":", nidl, nidr, nidd, nidu, nidb, nidf
+      !call gsync
 
       !        ^ y
       !        |
@@ -1819,43 +1928,48 @@ c-----------------------------------------------------------------------
       !      z/
 c     ======   Exchange x-faces   =======
 c     ======    Recv/Send Left    =======
-      reqs(1) = irecv1(mtagrl,u(0,0,0)   ,LRtype,1)           ! mtags from MGRID
+      reqs(1) = irecv2(mtagrl,u(0,0,0)   ,LRtype,1,nidl)      ! mtags from MGRID
       reqs(4) = isend1(mtagsl,u(1,0,0)   ,LRtype,1,nidl)      ! nidl from MGRID, null if mtag < 0
 c     ======    Recv/Send Right   =======
-      reqs(3) = irecv1(mtagrr,u(mx  ,0,0),LRtype,1)           ! no-op leaving 0's if mtag < 0
+      reqs(3) = irecv2(mtagrr,u(mx  ,0,0),LRtype,1,nidr)      ! no-op leaving 0's if mtag < 0
       reqs(2) = isend1(mtagsr,u(mx-1,0,0),LRtype,1,nidr)      ! nidr from MGRID
       !write(6,*) nid, ": LR done"
+      !call msgwaitall(reqs,4)
 
 c     ======   Exchange y-faces   =======
 c     ======    Recv/Send Down    =======
-      reqs(5) = irecv1(mtagrd,u(0,0,0)   ,UDtype,1)           ! mtags from MGRID
+      reqs(5) = irecv2(mtagrd,u(0,0,0)   ,UDtype,1,nidd)      ! mtags from MGRID
       reqs(8) = isend1(mtagsd,u(0,1,0)   ,UDtype,1,nidd)      ! nidd from MGRID
 c     ======     Recv/Send Up     =======
-      reqs(7) = irecv1(mtagru,u(0,my  ,0),UDtype,1)
+      reqs(7) = irecv2(mtagru,u(0,my  ,0),UDtype,1,nidu)
       reqs(6) = isend1(mtagsu,u(0,my-1,0),UDtype,1,nidu)      ! nidu from MGRID
 
-      call msgwaitall(reqs,8)
+      !call msgwaitall(reqs(5:8),4)
 
 c     ======   Exchange z-faces, no buffers (alignment already matches)   =======
-      if (FBtype.eq.0) then
-        isz = (mx+1)*(my+1)
-c       ======    Recv/Send Back    =======
-        reqs(9 ) = irecv1(mtagrb,u(0,0,0)   ,mgreal,isz)      ! mtags from MGRID
-        reqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
-c       ======    Recv/Send Front   =======
-        reqs(11) = irecv1(mtagrf,u(0,0,mz  ),mgreal,isz)
-        reqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
-      else
-c       ======    Recv/Send Back    =======
-        reqs(9 ) = irecv1(mtagrb,u(0,0,0)   ,FBtype,1)        ! mtags from MGRID
-        reqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
-c       ======    Recv/Send Front   =======
-        reqs(11) = irecv1(mtagrf,u(0,0,mz  ),FBtype,1)
-        reqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
-      endif
+#ifdef enable_FBtype
+c     ======    Recv/Send Back    =======
+      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,FBtype,1,nidb)   ! mtags from MGRID
+      reqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
+c     ======    Recv/Send Front   =======
+      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),FBtype,1,nidf)
+      reqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
+#else
+      isz = (mx+1)*(my+1)
+c     ======    Recv/Send Back    =======
+      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,mgreal,isz,nidb) ! mtags from MGRID
+      reqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
+c     ======    Recv/Send Front   =======
+      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),mgreal,isz,nidf)
+      reqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
+#endif
 
 c     ======       Wait All       =======
-      call msgwaitall(reqs(9:12),4)
+      !call msgwaitall(reqs(9:12),4)
+      call msgwaitall(reqs,12)
+      !do i = 1,12
+      !  if (reqs(i).ne.MPI_REQUEST_NULL) call msgwait1(reqs(i))
+      !enddo
 
       return
       end
@@ -1867,7 +1981,7 @@ c-----------------------------------------------------------------------
 
       real u(0:mx,0:my,0:mz)!,buff1(0:1),buff2(0:1),buffo(0:1)
 
-      !if (nid.eq.0) write(6,*) nid, ": ", LRtype, UDtype
+      !if (nid.eq.1) write(6,*) nid, ": ", LRtype, UDtype
       !do
       !enddo
 
@@ -1880,11 +1994,11 @@ c     ======   Exchange x-faces   =======
 c     ======       Recv Left      =======
       !len = myz*wdsize                         ! wdsize from MGRID
       !imsg_left  = irecv0(mtagrl,buff1,len)    ! mtags from MGRID
-      imsg_left = irecv1(mtagrl,u(0,0,0),LRtype,1)
+      imsg_left = irecv2(mtagrl,u(0 ,0,0),LRtype,1,nidl)
 
 c     ======      Recv Right      =======
       !imsg_right = irecv0(mtagrr,buff2,len)    ! Set buff=0 if mtag < 0
-      imsg_right = irecv1(mtagrr,u(mx,0,0),LRtype,1)
+      imsg_right = irecv2(mtagrr,u(mx,0,0),LRtype,1,nidr)
       !call gsync()                             ! make sure all are posted
 
 c     ======       Send Left      =======
@@ -1892,7 +2006,7 @@ c     ======       Send Left      =======
 c      do j = 0,myz1; buffo(j) = u(1   ,j,0);! load left face into outbound buff      enddo
       !buffo(0:myz1) = u(1,0:myz1,0)
       !call csend0(mtagsl,buffo,len,nidl,0) ! nidl from MGRID, null if mtag < 0
-      call csend1(mtagsl,u(1,0,0),LRtype,1,nidl)
+      call csend1(mtagsl,u(1  ,0,0),LRtype,1,nidl)
 
 c     ======      Send Right      =======
 c      do j = 0,myz1; buffo(j) = u(mx-1,j,0);! load right face into outbound buff      enddo
@@ -1920,10 +2034,10 @@ c     ======   Exchange y-faces   =======
       !len = mxz*wdsize                        ! wdsize from MGRID
 c     ======       Recv Down      =======
       !imsg_down  = irecv0(mtagrd,buff1,len)   ! mtags from MGRID
-      imsg_down  = irecv1(mtagrd,u(0,0,0),UDtype,1)
+      imsg_down  = irecv2(mtagrd,u(0,0 ,0),UDtype,1,nidd)
 c     ======        Recv Up       =======
       !imsg_up    = irecv0(mtagru,buff2,len)
-      imsg_up    = irecv1(mtagru,u(0,my,0),UDtype,1)
+      imsg_up    = irecv2(mtagru,u(0,my,0),UDtype,1,nidu)
       !call gsync()                            ! make sure all are posted
 
 c     ======       Send Down      =======
@@ -1976,24 +2090,24 @@ c     ======   Exchange z-faces, no buffers (alignment already matches)   ======
       isz = (mx+1)*(my+1)!*wdsize                       ! wdsize from MGRID
       !len = size*wdsize
 
-      if (FBtype.eq.0) then
-        !imsg_back  = irecv0(mtagrb,u(0,0,0 ),len)         ! mtags from MGRID
+#ifdef enable_FBtype
+        imsg_back  = irecv2(mtagrb,u(0,0,0 ),FBtype,1,nidb)   ! mtags from MGRID
+        imsg_front = irecv2(mtagrf,u(0,0,mz),FBtype,1,nidf)
+
+        call csend1(mtagsb,u(0,0,   1),FBtype,1,nidb)         ! nidb from MGRID
+        call csend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)         ! nidf from MGRID
+#else
+        !imsg_back  = irecv0(mtagrb,u(0,0,0 ),len)             ! mtags from MGRID
         !imsg_front = irecv0(mtagrf,u(0,0,mz),len) 
-        imsg_back  = irecv1(mtagrb,u(0,0,0 ),mgreal,isz)  ! mtags from MGRID
-        imsg_front = irecv1(mtagrf,u(0,0,mz),mgreal,isz)
-        !call gsync()                                      ! make sure all are posted
+        imsg_back  = irecv2(mtagrb,u(0,0,0 ),mgreal,isz,nidb) ! mtags from MGRID
+        imsg_front = irecv2(mtagrf,u(0,0,mz),mgreal,isz,nidf)
+        !call gsync()                                          ! make sure all are posted
 
-        !call csend0(mtagsb,u(0,0,   1),len,nidb,0)        ! nidb from MGRID
-        !call csend0(mtagsf,u(0,0,mz-1),len,nidf,0)        ! nidf from MGRID
-        call csend1(mtagsb,u(0,0,   1),mgreal,isz,nidb)   ! nidb from MGRID
-        call csend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf)   ! nidf from MGRID
-      else
-        imsg_back  = irecv1(mtagrb,u(0,0,0 ),FBtype,1)    ! mtags from MGRID
-        imsg_front = irecv1(mtagrf,u(0,0,mz),FBtype,1)
-
-        call csend1(mtagsb,u(0,0,   1),FBtype,1,nidb)     ! nidb from MGRID
-        call csend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)     ! nidf from MGRID
-      endif
+        !call csend0(mtagsb,u(0,0,   1),len,nidb,0)            ! nidb from MGRID
+        !call csend0(mtagsf,u(0,0,mz-1),len,nidf,0)            ! nidf from MGRID
+        call csend1(mtagsb,u(0,0,   1),mgreal,isz,nidb)       ! nidb from MGRID
+        call csend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf)       ! nidf from MGRID
+#endif
 
       call msgwait(imsg_front)
       call msgwait(imsg_back)
@@ -2247,7 +2361,7 @@ c     return
 
       call gop(u,w,'+  ',nn)
 
-      if (nid.eq.0) then
+      if (nid.eq.1) then
          write(6,2) lev,name4,n,m,mp,mq,mr,nx,ny,nz
   2      format(i2,'pp ',a4,10i4)
          do k=nz-1,1,-1
@@ -2293,7 +2407,7 @@ c-----------------------------------------------------------------------
       do i_sweep = 2,m+izero
 
         call copy    (o,u,mm1) ! Old copy, w/ boundary data
-c       call xchange0(o)
+c       call xchange0(o,XCHANGE_JGX)
 
         do k=1,mz-1
         do j=1,my-1
