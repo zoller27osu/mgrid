@@ -16,12 +16,12 @@ c     nsmooth - number of times to smooth
 c
 c-----------------------------------------------------------------------
 
-#define XCHANGE_JGX 2
+#define XCHANGE_JGX 1
 #define JAC3D_JGX 0
-#define enable_FBtype
+!#define enable_FBtype
 
 !#define verify_jacobi_alts
-#define verify_xchange
+!#define verify_xchange
 
 !#define conservative_mpi_dtype_recreate
 
@@ -137,24 +137,24 @@ c     ========   Time Xchange  =========
       !if (nid.eq.1) write(6,*) time0
       !if (nid.eq.1) write(6,"(F15.3)") time0
       do ipass=1,npass*200
-         call xchange0(u,2)
-      enddo
-      call gsync
-      time1 = dclock()
-      if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
-
-      call gsync
-      time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
-      !if (nid.eq.1) write(6,"(F15.3)") time0
-      do ipass=1,npass*200
          call xchange0(u,1)
       enddo
       call gsync
       time1 = dclock()
       if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
+
+      call gsync
+      time0 = dclock()
+      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.1) write(6,"(F15.3)") time0
+      do ipass=1,npass*200
+         call xchange0(u,2)
+      enddo
+      call gsync
+      time1 = dclock()
+      if (nid.eq.1) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
 
       call gsync
       time0 = dclock()
@@ -1777,10 +1777,9 @@ c-----------------------------------------------------------------------
       return
       end
 c-----------------------------------------------------------------------
-      subroutine test_alts(ukf,rkf,h,sigma,nsmooth,rf,iz,minIg,maxIg)
 #ifdef verify_jacobi_alts
+      subroutine test_alts(ukf,rkf,h,sigma,nsmooth,rf,iz,minIg,maxIg)
       USE Comm_Funcs, ONLY : mateq
-#endif
       include 'MGRID'
       real ukf(1), rkf(1), rf(1)
       real, dimension(0:mx,0:my,0:mz) :: rfc, v, w
@@ -1814,7 +1813,6 @@ c-----------------------------------------------------------------------
           !call gsync
           call smooth_m(w,rkf,mx,my,mz,h,sigma,nsmoth,rfc,iz,ig,ldim)
 
-#ifdef verify_jacobi_alts
           if (nid.eq.6) then
             if (mateq(v,w,0)) then ! the 0 excludes the faces from the comparison
               write(6,*) nid, ": igs = ", ig, " matches result of "
@@ -1829,14 +1827,13 @@ c-----------------------------------------------------------------------
               call print_3d(w(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
             endif
           endif
-#endif
         enddo
-#ifdef verify_jacobi_alts
         if (nid.eq.6) write(6,*) " "
-#endif
       enddo
       end
+#endif
 c-----------------------------------------------------------------------
+#ifdef verify_xchange
       subroutine test_xchange(u,minJg,maxJg)
       USE Comm_Funcs, ONLY : mateq
 
@@ -1884,6 +1881,7 @@ c-----------------------------------------------------------------------
         endif
       enddo
       end
+#endif
 c-----------------------------------------------------------------------
       subroutine xchange0(u, jgx) ! Zeros out boundary data
       include 'MGRID'
@@ -1984,8 +1982,6 @@ c-----------------------------------------------------------------------
       !if (nid.eq.1) write(6,*) nid, ": ", LRtype, UDtype
       !do
       !enddo
-
-      !call make_3d_types(mx+1, my+1, mz+1, mgreal, LRtype, UDtype) ! makes MPI datatypes for xchange!
 
 c     ======   Exchange x-faces   =======
       !myz  = (my+1)*(mz+1)
@@ -2111,8 +2107,6 @@ c     ======   Exchange z-faces, no buffers (alignment already matches)   ======
 
       call msgwait(imsg_front)
       call msgwait(imsg_back)
-
-      !call erase_3d_types(LRtype, UDtype)
 
       return
       end

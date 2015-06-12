@@ -207,3 +207,57 @@ c-----------------------------------------------------------------------
       return
       end
 
+c-----------------------------------------------------------------------
+      subroutine msgwait1(imsg)
+      include 'mpif.h'
+      common /cmgmpi/ nid,np,mgreal,wdsize
+      integer wdsize
+
+      integer imsg
+#ifdef catch_mpi_errs
+      character str(MPI_MAX_ERROR_STRING)
+#endif
+#ifdef waitall_statuses
+      integer status(MPI_STATUS_SIZE)
+#endif
+
+      !if (imsg.eq.mpi_request_null) return
+
+c     write(6,*) nid,' msgwait:',imsg
+!#ifdef catch_mpi_errs
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                                    ,MPI_ERRORS_RETURN,ier)
+!      call gsync
+!#endif
+      !write(6,*) nid, ": ", imsg
+#ifdef waitall_statuses
+      call MPI_Wait(imsg,status,ierr)
+#else
+      call MPI_Wait(imsg,MPI_STATUS_IGNORE,ierr)
+#endif
+#ifdef catch_mpi_errs
+      if (ierr.ne.MPI_SUCCESS) then
+        !if (nid.ne.0) then
+        !do
+        !enddo
+        !endif
+
+        call MPI_Error_string(ierr,str,lenres,ierr)
+        write(6,*) nid, ": ", str
+#ifdef waitall_statuses
+        if (status(MPI_ERROR).ne.MPI_SUCCESS) then
+          write(6,*) nid, ": status(", i, ") error = "
+          call MPI_Error_string(status(MPI_ERROR),str,lenres,ierr)
+          write(6,*) nid, ": ", str
+        endif
+#endif
+        stop
+
+      endif
+!      if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
+!     $                             ,MPI_ERRORS_ARE_FATAL,ierr)
+!      call gsync
+#endif
+
+      return
+      end

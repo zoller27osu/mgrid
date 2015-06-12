@@ -5,7 +5,7 @@ CC    = mpicc
 F77   = mpif77
 P     = -fdefault-real-8 -fdefault-double-8 -x f77-cpp-input
 
-FLAGS = -g -O3 -mcmodel=medium -fbacktrace #-Wall -Og
+FLAGS = -g -O3 -mcmodel=medium #-fbacktrace #-Wall -Og
 
 CFLAGS   = -std=c99
 FFLAGS   = #-c
