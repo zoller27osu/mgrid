@@ -20,8 +20,8 @@ c-----------------------------------------------------------------------
 #define JAC3D_JGX 0
 !#define enable_FBtype
 
-!#define verify_jacobi_alts
-!#define verify_xchange
+#define verify_jacobi_alts
+#define verify_xchange
 
 !#define conservative_mpi_dtype_recreate
 
@@ -153,7 +153,7 @@ c     ========   Time Xchange  =========
       enddo
       call gsync
       time1 = dclock()
-      if (nid.eq.1) write(6,*) time0, time1
+      !if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
 
       call gsync
@@ -1257,9 +1257,10 @@ c-----------------------------------------------------------------------
           call smooth_m_jac2d(u,r,mx,my,h,sigma,m,uo,iz)
         elseif (igs.eq.1) then
           call smooth_m_gs_2d(u,r,mx,my,h,sigma,m,iz)
-        elseif (nid.eq.1) then
-          write(6, *) nid, ": no smooth_m func ",
+        else!if (nid.eq.1) then
+          write(6, *) "no smooth_m func ",
      $      "corresponding to igs = ", igs, "!"
+          call exitt
         endif
       else
         if (igs.eq.0) then
@@ -1276,8 +1277,8 @@ c-----------------------------------------------------------------------
           call smooth_m_jac3idx(u,r,mx,my,mz,h,sigma,m,uo,iz)
        ! elseif (igs.eq.6) then
        !   call smooth_m_jac3swp(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (nid.eq.1) then
-          write(6, *) nid, ": no smooth_m func ",
+        else!if (nid.eq.1) then
+          write(6, *) "no smooth_m func ",
      $      "corresponding to igs = ", igs, "!"
           call exitt
         endif
