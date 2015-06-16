@@ -25,8 +25,8 @@ OBJS = comm_mpi.o x2p.o
 # Explicitly spell this one out otherwise uses C linker
 x2p: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
-x2p.o: x2p.f
-comm_mpi.o: comm_mpi.f MGRID
+x2p.o: x2p.F
+comm_mpi.o: comm_mpi.F MGRID
 
 ##############################################################################
 
