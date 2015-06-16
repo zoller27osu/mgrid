@@ -30,7 +30,7 @@ c:	$(NOBJSC)
 clean:
 	-'rm' $(NOBJS) $(NOBJSC) x2p x2pc
 
-x2p.o   	: x2p.f 	; $(F77) -c $P $(FLAGS)  x2p.f 
-comm_mpi.o   	: comm_mpi.f 	; $(F77) -c $P $(FLAGS)  comm_mpi.f 
+x2p.o   	: x2p.F 	; $(F77) -c $P $(FLAGS)  x2p.F 
+comm_mpi.o   	: comm_mpi.F 	; $(F77) -c $P $(FLAGS)  comm_mpi.F 
 x2pc.o   	: x2p.c 	; $(CC) -c $P $(FLAGS)  x2p.c 
 #comm_mpi.o   	: comm_mpi.c 	; $(CC) -c $P $(FLAGS)  comm_mpi.c 
