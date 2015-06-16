@@ -285,7 +285,7 @@ c     ========    Time Alts    =========
             
             call dmesh(mm,n)  ! find mesh decomposition & msg tags
             call restrict_i (r(kf),rf,mxf,myf,mzf
-     $                               ,ieven,jeven,keven,ldim)
+     &                               ,ieven,jeven,keven,ldim)
         enddo
     
         one = 1.
@@ -319,7 +319,7 @@ c     ========    Time Alts    =========
            ! prolongate and add
 
            call prolong_a (u(kf),dmax,u(kc),mxc,myc,mzc
-     $                                ,ieven,jeven,keven,ldim) 
+     &                                ,ieven,jeven,keven,ldim) 
            call reset_mtags (lev+1)  ! Exchange on prior level processor set
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            !if (nid.eq.6) write(6, *) nid, ": xchanging u(kf)", __LINE__
@@ -375,11 +375,12 @@ c-----------------------------------------------------------------------
       if (ldim.eq.3) n3=n3*nz
       if (nid.eq.1) then
         write(6,*) 
-     $"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
-     $" nz          n3       mp   mq   mr       np          c1"
+     &"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
+     &" nz          n3       mp   mq   mr       np          c1"
         write(6,1) 
-     $  ii,dmax,emx,time,ldim,nlev,nx,ny,nz,n3,mp,mq,mr,np,c1
-    1 format(i7,1p3e12.4,i2,i3,3i6,i13,'=n ',3i5,i9,'  max error',a1)
+     &    ii,dmax,emx,time,ldim,nlev,nx,ny,nz,n3,mp,mq,mr,np,c1
+
+    1   format(i7,1p,3e12.4,i2,i3,3i6,i13,'=n ',3i5,i9,'  max error',a1)
       endif
 
       cflops = cflops*np
@@ -391,11 +392,12 @@ c-----------------------------------------------------------------------
 
       if (nid.eq.1) then
         write(6,*)
-     $"   ii   emx         time        fflops      cflops      pflops ",
-     $"     rflops      rrlops               n3           np      c1"
+     &"   ii   emx         time        fflops      cflops      pflops ",
+     &"     rflops      rrlops               n3           np      c1"
         write(6,2) 
-     $  ii,emx,time,fflops,cflops,pflops,rflops,rrlops,n3,np,c1
-    2 format(i7,1p7e12.4,i13,'=n ',i9,'  flops',a1)
+     &    ii,emx,time,fflops,cflops,pflops,rflops,rrlops,n3,np,c1
+
+    2   format(i7,1p,7e12.4,i13,'=n ',i9,'  flops',a1)
       endif
 
       call reset_flops ! Reset flop counters
@@ -435,7 +437,7 @@ c     Yields MOD(I,N) with the exception that if I=K*N, result is N.
 
       if (n.eq.0) then
          write(6,*)
-     $   'WARNING:  Attempt to take MOD(I,0) in function mod1.'
+     &   'WARNING:  Attempt to take MOD(I,0) in function mod1.'
          return
       endif
       ii = i+n-1
@@ -727,7 +729,7 @@ c-----------------------------------------------------------------------
       mtagrb = ntagr(6,ilev)
 
 c     write(6,1) nid,lev,ilev,jlev
-c    $   ,nidu,nidd,(ntags(k,ilev),ntagr(k,ilev),k=3,4)
+c    &   ,nidu,nidd,(ntags(k,ilev),ntagr(k,ilev),k=3,4)
 c  1  format(i3,'TAGS:',9i5)
 
       return
@@ -786,8 +788,8 @@ c     ===========  Assign global numbering =======
       
       gid = MPI_PROC_NULL !-1
       if (0.le.ip.and.ip.lt.mp.and.    ! Inside Box
-     $    0.le.iq.and.iq.lt.mq.and.
-     $    0.le.ir.and.ir.lt.mr      )  gid = ip + iq*mp + ir*mpq
+     &    0.le.iq.and.iq.lt.mq.and.
+     &    0.le.ir.and.ir.lt.mr      )  gid = ip + iq*mp + ir*mpq
 
       return
       end
@@ -928,8 +930,8 @@ c     write(6,*) nid,isty,iedy,my,' isty'
          x = (istx+i)*dx
          y = (isty+j)*dy
          u(i,j) = sin(pi*x)*sin(pi*y)
-     $            + .25*sin(pik*x)*sin(pik*y)
-     $            + .15*sin(pij*x)*sin(pij*y)
+     &            + .25*sin(pik*x)*sin(pik*y)
+     &            + .15*sin(pij*x)*sin(pij*y)
       enddo
       enddo
 
@@ -959,9 +961,9 @@ c-----------------------------------------------------------------------
          y = (isty+j)*dy
          z = (istz+k)*dz
          u(i,j,k) = sin(pi*x)*sin(pi*y)*sin(pi*z)
-     $            + .25*sin(pik*x)*sin(pik*y)
-     $            + .15*sin(pij*x)*sin(pij*z)
-     $            + .15*sin(pij*z)*sin(pij*y)
+     &            + .25*sin(pik*x)*sin(pik*y)
+     &            + .15*sin(pij*x)*sin(pij*z)
+     &            + .15*sin(pij*z)*sin(pij*y)
          u(i,j,k) = u(i,j,k) + x + x*y + x*y*z
 c        write(6,1) i,j,k,x,y,z,u(i,j,k)
 c 1      format(3i5,4f12.5,' uinit')
@@ -992,7 +994,7 @@ c-----------------------------------------------------------------------
       do j=1,my-1
       do i=1,mx-1
          r(i,j)=h2i
-     $       *(h2*ro(i,j)+u(i-1,j)+u(i,j-1)+u(i+1,j)+u(i,j+1)-4*u(i,j))
+     &       *(h2*ro(i,j)+u(i-1,j)+u(i,j-1)+u(i+1,j)+u(i,j+1)-4*u(i,j))
       enddo
       enddo
 
@@ -1014,9 +1016,9 @@ c-----------------------------------------------------------------------
       do j=1,my-1
       do i=1,mx-1
          r(i,j,k)=h2i*(h2*ro(i,j,k)-6*u(i,j,k)
-     $       + u(i-1,j,k) + u(i+1,j,k)
-     $       + u(i,j-1,k) + u(i,j+1,k) 
-     $       + u(i,j,k-1) + u(i,j,k+1))
+     &       + u(i-1,j,k) + u(i+1,j,k)
+     &       + u(i,j-1,k) + u(i,j+1,k) 
+     &       + u(i,j,k-1) + u(i,j,k+1))
       enddo
       enddo
       enddo
@@ -1052,8 +1054,8 @@ c-----------------------------------------------------------------------
             ip1=i+1
 
             rc(ic,jc) = .25*rf(i,j)
-     $        +(rf(im1,j)+rf(ip1,j)+rf(i,jm1)+rf(i,jp1))*.125
-     $        +(rf(im1,jm1)+rf(ip1,jm1)+rf(im1,jp1)+rf(ip1,jp1))*.0625
+     &        +(rf(im1,j)+rf(ip1,j)+rf(i,jm1)+rf(i,jp1))*.125
+     &        +(rf(im1,jm1)+rf(ip1,jm1)+rf(im1,jp1)+rf(ip1,jp1))*.0625
 
             i=i+2
          enddo
@@ -1087,20 +1089,20 @@ c-----------------------------------------------------------------------
             ip1=i+1
               
             rc(ic,jc,kc) = .125*rf(i,j,k)
-     $      + .0625 * ( rf(im1,j,k)+rf(i,jm1,k)+rf(i,j,km1)
-     $                + rf(ip1,j,k)+rf(i,jp1,k)+rf(i,j,kp1) ) ! +8 flops
+     &      + .0625 * ( rf(im1,j,k)+rf(i,jm1,k)+rf(i,j,km1)
+     &                + rf(ip1,j,k)+rf(i,jp1,k)+rf(i,j,kp1) ) ! +8 flops
 
-     $      + .03125* ( rf(i,  jm1,km1)+rf(i,  jp1,km1)
-     $                + rf(i,  jm1,kp1)+rf(i,  jp1,kp1)
-     $                + rf(im1,j,  km1)+rf(ip1,j,  km1)
-     $                + rf(im1,j,  kp1)+rf(ip1,j,  kp1)
-     $                + rf(im1,jm1,k  )+rf(ip1,jm1,k  )
-     $                + rf(im1,jp1,k  )+rf(ip1,jp1,k  ) )    ! +12 flops
+     &      + .03125* ( rf(i,  jm1,km1)+rf(i,  jp1,km1)
+     &                + rf(i,  jm1,kp1)+rf(i,  jp1,kp1)
+     &                + rf(im1,j,  km1)+rf(ip1,j,  km1)
+     &                + rf(im1,j,  kp1)+rf(ip1,j,  kp1)
+     &                + rf(im1,jm1,k  )+rf(ip1,jm1,k  )
+     &                + rf(im1,jp1,k  )+rf(ip1,jp1,k  ) )    ! +12 flops
 
-     $      + .015625*( rf(im1,jm1,km1)+rf(ip1,jm1,km1)
-     $                + rf(im1,jp1,km1)+rf(ip1,jp1,km1)
-     $                + rf(im1,jm1,kp1)+rf(ip1,jm1,kp1)
-     $                + rf(im1,jp1,kp1)+rf(ip1,jp1,kp1) )    ! +8 flops
+     &      + .015625*( rf(im1,jm1,km1)+rf(ip1,jm1,km1)
+     &                + rf(im1,jp1,km1)+rf(ip1,jp1,km1)
+     &                + rf(im1,jm1,kp1)+rf(ip1,jm1,kp1)
+     &                + rf(im1,jp1,kp1)+rf(ip1,jp1,kp1) )    ! +8 flops
 
             i=i+2
           enddo
@@ -1152,7 +1154,7 @@ c-----------------------------------------------------------------------
             uf(i2,j1) = uf(i2,j1) + .5*(uc(ic,jc)+uc(ic,jcm1))
             uf(i1,j2) = uf(i1,j2) + .5*(uc(ic,jc)+uc(icm1,jc))
             uf(i1,j1) = uf(i1,j1) + .25*
-     $          (uc(icm1,jcm1)+uc(icm1,jc)+uc(ic,jcm1)+uc(ic,jc))
+     &          (uc(icm1,jcm1)+uc(icm1,jc)+uc(ic,jcm1)+uc(ic,jc))
    
             i1   = i1  +2
             i2   = i2  +2
@@ -1209,17 +1211,17 @@ c-----------------------------------------------------------------------
 
             ! Faces   !
             uf(i2,j1,k1)=uf(i2,j1,k1) + 0.25* ( uc(ic,jc,kc) +
-     $                  uc(ic,jcm1,kc)+uc(ic,jc,kcm1)+uc(ic,jcm1,kcm1)) 
+     &                  uc(ic,jcm1,kc)+uc(ic,jc,kcm1)+uc(ic,jcm1,kcm1)) 
             uf(i1,j2,k1) = uf(i1,j2,k1) + 0.25* ( uc(ic,jc,kc) +
-     $                  uc(icm1,jc,kc)+uc(ic,jc,kcm1)+uc(icm1,jc,kcm1))
+     &                  uc(icm1,jc,kc)+uc(ic,jc,kcm1)+uc(icm1,jc,kcm1))
             uf(i1,j1,k2) = uf(i1,j1,k2) + 0.25* ( uc(ic,jc,kc) +
-     $                  uc(icm1,jc,kc)+uc(ic,jcm1,kc)+uc(icm1,jcm1,kc))
+     &                  uc(icm1,jc,kc)+uc(ic,jcm1,kc)+uc(icm1,jcm1,kc))
 
             ! Center !
             dctr = .125* ( uc(icm1,jcm1,kcm1) + uc(ic  ,jcm1,kcm1) +
-     $                     uc(icm1,jc  ,kcm1) + uc(ic  ,jc  ,kcm1) +
-     $                     uc(icm1,jcm1,kc  ) + uc(ic  ,jcm1,kc  ) +
-     $                     uc(icm1,jc  ,kc  ) + uc(ic  ,jc  ,kc  ) )  
+     &                     uc(icm1,jc  ,kcm1) + uc(ic  ,jc  ,kcm1) +
+     &                     uc(icm1,jcm1,kc  ) + uc(ic  ,jcm1,kc  ) +
+     &                     uc(icm1,jc  ,kc  ) + uc(ic  ,jc  ,kc  ) )  
 
             uf(i1,j1,k1) = uf(i1,j1,k1) + dctr
 
@@ -1259,7 +1261,7 @@ c-----------------------------------------------------------------------
           call smooth_m_gs_2d(u,r,mx,my,h,sigma,m,iz)
         else!if (nid.eq.1) then
           write(6, *) "no smooth_m func ",
-     $      "corresponding to igs = ", igs, "!"
+     &      "corresponding to igs = ", igs, "!"
           call exitt
         endif
       else
@@ -1279,7 +1281,7 @@ c-----------------------------------------------------------------------
        !   call smooth_m_jac3swp(u,r,mx,my,mz,h,sigma,m,uo,iz)
         else!if (nid.eq.1) then
           write(6, *) "no smooth_m func ",
-     $      "corresponding to igs = ", igs, "!"
+     &      "corresponding to igs = ", igs, "!"
           call exitt
         endif
       endif
@@ -1311,7 +1313,7 @@ c-----------------------------------------------------------------------
         do j=1,my-1
         do i=1,mx-1
            u(i,j)=o(i,j) + sa
-     $         *(h2*r(i,j)+o(i-1,j)+o(i,j-1)+o(i+1,j)+o(i,j+1)-4*o(i,j))
+     &         *(h2*r(i,j)+o(i-1,j)+o(i,j-1)+o(i+1,j)+o(i,j+1)-4*o(i,j))
         enddo
         enddo
       enddo
@@ -1321,18 +1323,18 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 c     ======= Calculation is independent of u =======
       subroutine jac3d_helper (ix,iy,iz,u,o,r,h2,sa,jgx) ! Jacobi helper
-      include 'MGRID'
-      real, dimension(0:mx,0:my,0:mz) :: u, r, o
+      !include 'MGRID'
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
       
       call xchange0(o,jgx) ! tile prev u
 
-      do k=1,mz-1
-      do j=1,my-1
-      do i=1,mx-1
+      do k=1,iz-1
+      do j=1,iy-1
+      do i=1,ix-1
         u(i,j,k) = o(i,j,k) + sa*( h2*r(i,j,k)-6*o(i,j,k)
-     $            + o(i-1,j,k) + o(i+1,j,k)
-     $            + o(i,j-1,k) + o(i,j+1,k)
-     $            + o(i,j,k-1) + o(i,j,k+1) ) ! calculate new u
+     &            + o(i-1,j,k) + o(i+1,j,k)
+     &            + o(i,j-1,k) + o(i,j+1,k)
+     &            + o(i,j,k-1) + o(i,j,k+1) ) ! calculate new u
       enddo
       enddo
       enddo
@@ -1342,61 +1344,62 @@ c     ======= Calculation is independent of u =======
 c-----------------------------------------------------------------------
 c     ======= In this original version, u never contains any boundary data! =======
       subroutine smooth_m_jac3d (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
-      include 'MGRID'
-
-      !real u(0:mx,0:my,0:mz),r(0:mx,0:my,0:mz),o(0:mx,0:my,0:mz)
-      real, dimension(0:mx,0:my,0:mz) :: u, r, o
-
+      !include 'MGRID'
       common /ccflops/ cflops,pflops,rflops,rrlops
+
+      !real u(0:ix,0:iy,0:iz),r(0:ix,0:iy,0:iz),o(0:ix,0:iy,0:iz)
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
+
+	    !if (nid.eq.6) write(6,*) nid,": ix,iy,iz=", ix, iy, iz
 
       h2       = h*h
       sa       = sigma/6
 
       if (izero.eq.0) then
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           u(i,j,k)=sa*h2*r(i,j,k) ! calculates u as if o were initially all 0's
         enddo
         enddo
         enddo
-        cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
       endif
 
-      !write(6,*) nid, " m, izero, mx, my, mz = ", m, izero, mx, my, mz
+      !write(6,*) nid, " m, izero, ix, iy, iz = ", m, izero, ix, iy, iz
 
       !iters = 0
-      mm1 = (mx+1)*(my+1)*(mz+1)
+      mm1 = (ix+1)*(iy+1)*(iz+1)
       do i_sweep = 2,m+izero
         call copy(o,u,mm1) ! Old copy, w/ old (EMPTY!) boundary data (o gets prev "u")
 
-        if (nid.eq.6) then
+        !if (nid.eq.6) then
           !write(6,*) nid, ": u = "
           !call print_3d(u, 11, 2, 2)
           !write(6,*) nid, ": o = "
           !call print_3d(o, 11, 2, 2)
-        endif
+        !endif
 
-        call jac3d_helper(mx,my,mz,u,o,r,h2,sa,JAC3D_JGX) ! u gets new "u"
+        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,JAC3D_JGX) ! u gets new "u"
 
-        if (nid.eq.6) then
+        !if (nid.eq.6) then
           !write(6,*) nid, ": xchanged o = "
           !call print_3d(o, 11, 2, 2)
           !write(6,*) nid, ": new u = "
           !call print_3d(u, 11, 2, 2)
-        endif
+        !endif
 
         !iters = iters + 1
       enddo
-      cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
 
       !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
 
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3alt (u,r,mx,my,mz,h,sigma,m,o,izero) !  Jacobi
-      real, dimension(0:mx,0:my,0:mz) :: u, r, o
+      subroutine smooth_m_jac3alt (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
 
       common /ccflops/ cflops,pflops,rflops,rrlops
 
@@ -1404,40 +1407,40 @@ c-----------------------------------------------------------------------
       sa       = sigma/6
 
       if (izero.eq.0) then
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           u(i,j,k)=sa*h2*r(i,j,k)
         enddo
         enddo
         enddo
-        cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
       endif
 
       !iters = 0
       i_end = (m+izero-2+1)/2+1
       do i_sweep = 2,i_end
-        call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
         !iters = iters+2
       enddo
 
       if (MOD(m+izero-2+1,2).ne.0) then
-        call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        mm1 = (mx+1)*(my+1)*(mz+1)
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        mm1 = (ix+1)*(iy+1)*(iz+1)
         call copy (u,o,mm1)                     ! u needs newest "u", which is in o
         !iters = iters+1
       endif
 
-      cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
 
       !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
 
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3flg (u,r,mx,my,mz,h,sigma,m,o,izero) !  Jacobi
-      real, dimension(0:mx,0:my,0:mz) :: u, r, o
+      subroutine smooth_m_jac3flg (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
       LOGICAL :: f
 
       common /ccflops/ cflops,pflops,rflops,rrlops
@@ -1446,37 +1449,37 @@ c-----------------------------------------------------------------------
       sa       = sigma/6
 
       if (izero.eq.0) then
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           u(i,j,k)=sa*h2*r(i,j,k)
         enddo
         enddo
         enddo
-        cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
       endif
 
       f = .TRUE. ! means u was last updated
       do i_sweep = 2,m+izero
         if (f) then
-          call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX)
+          call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX)
         else
-          call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX)
+          call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX)
         end if
         f = .NOT.f
       enddo
-      cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
 
       if (.NOT.f) then
-        mm1 = (mx+1)*(my+1)*(mz+1)
+        mm1 = (ix+1)*(iy+1)*(iz+1)
         call copy (u,o,mm1) ! o was last updated
       endif
 
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3cnd (u,r,mx,my,mz,h,sigma,m,o,izero) !  Jacobi
-      real, dimension(0:mx,0:my,0:mz) :: u, r, o
+      subroutine smooth_m_jac3cnd (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
 
       common /ccflops/ cflops,pflops,rflops,rrlops
 
@@ -1484,34 +1487,34 @@ c-----------------------------------------------------------------------
       sa       = sigma/6
 
       if (izero.eq.0) then
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           u(i,j,k)=sa*h2*r(i,j,k)
         enddo
         enddo
         enddo
-        cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
       endif
 
       do i_sweep = 2,m+izero
         if (MOD(i_sweep,2).eq.0) then
-          call jac3d_helper(mx,my,mz,o,u,r,h2,sa,XCHANGE_JGX)
+          call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX)
         else
-          call jac3d_helper(mx,my,mz,u,o,r,h2,sa,XCHANGE_JGX)
+          call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX)
         end if
       enddo
-      cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
 
       if (MOD(m+izero,2).eq.0) then
-        mm1 = (mx+1)*(my+1)*(mz+1)
+        mm1 = (ix+1)*(iy+1)*(iz+1)
         call copy (u,o,mm1) ! o was updated last
       endif
 
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3idx (u,r,mx,my,mz,h,sigma,m,o,izero) !  Jacobi
+      subroutine smooth_m_jac3idx (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
       common /ccflops/ cflops,pflops,rflops,rrlops
 
       ! Requires explicit, constant bounds... inviable
@@ -1523,51 +1526,51 @@ c-----------------------------------------------------------------------
       !  type(realmat), pointer :: p
       !end type realptr
 
-      real, dimension(0:mx,0:my,0:mz) :: u, o, r
-      !real, dimension(0:mx,0:my,0:mz), target :: u, o
-      !real r(0:mx,0:my,0:mz)
+      real, dimension(0:ix,0:iy,0:iz) :: u, o, r
+      !real, dimension(0:ix,0:iy,0:iz), target :: u, o
+      !real r(0:ix,0:iy,0:iz)
 
       !type(realptr), dimension(0:1) :: uo
       !uo(0)%p => u; uo(1)%p = o
-      real, dimension(0:1,0:mx,0:my,0:mz) :: uo
+      real, dimension(0:1,0:ix,0:iy,0:iz) :: uo
       uo(0,:,:,:) = u; uo(1,:,:,:) = o
 
       h2       = h*h
       sa       = sigma/6
 
       if (izero.eq.0) then
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           uo(0,i,j,k)=sa*h2*r(i,j,k)
         enddo
         enddo
         enddo
-        cflops = cflops + 2*(mx-1)*(my-1)*(mz-1)
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
       endif
 
       io = 0
-      !mm1 = (mx+1)*(my+1)*(mz+1)
+      !mm1 = (ix+1)*(iy+1)*(iz+1)
       do i_sweep = 2,m+izero
 
         !call copy    (o,u,mm1) ! Old copy, w/ boundary data
         call xchange0(uo(io,:,:,:),XCHANGE_JGX)
 
-        do k=1,mz-1
-        do j=1,my-1
-        do i=1,mx-1
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
           uo(1-io,i,j,k) = uo(io,i,j,k) + sa*(
-     $              h2*r(i,j,k)-6*uo(io,i,j,k)
-     $              + uo(io,i-1,j,k) + uo(io,i+1,j,k)
-     $              + uo(io,i,j-1,k) + uo(io,i,j+1,k)
-     $              + uo(io,i,j,k-1) + uo(io,i,j,k+1) )
+     &              h2*r(i,j,k)-6*uo(io,i,j,k)
+     &              + uo(io,i-1,j,k) + uo(io,i+1,j,k)
+     &              + uo(io,i,j-1,k) + uo(io,i,j+1,k)
+     &              + uo(io,i,j,k-1) + uo(io,i,j,k+1) )
         enddo
         enddo
         enddo
         
         io = 1 - io
       enddo
-      cflops = cflops + (11*(mx-1)*(my-1)*(mz-1))*(m+izero-2+1)
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
 
       u = uo(io,:,:,:)
       o = uo(1-io,:,:,:)
@@ -1595,7 +1598,7 @@ c-----------------------------------------------------------------------
         do j=1,my-1
         do i=1,mx-1
            u   (i,j)=u(i,j) + sa
-     $         *(h2*r(i,j)+u(i-1,j)+u(i,j-1)+u(i+1,j)+u(i,j+1)-4*u(i,j))
+     &         *(h2*r(i,j)+u(i-1,j)+u(i,j-1)+u(i+1,j)+u(i,j+1)-4*u(i,j))
         enddo
         enddo
       enddo
@@ -1621,8 +1624,8 @@ c-----------------------------------------------------------------------
          do j=1,my-1
          do i=1,mx-1
            u(i,j,k) =  sa2*r(i,j,k)
-     $               + sh2*(u(i-1,j,k) + u(i,j-1,k) + u(i,j,k-1))
-     $               + s22*(r(i+1,j,k) + r(i,j+1,k) + r(i,j,k+1))
+     &               + sh2*(u(i-1,j,k) + u(i,j-1,k) + u(i,j,k-1))
+     &               + s22*(r(i+1,j,k) + r(i,j+1,k) + r(i,j,k+1))
          enddo
          enddo
          enddo
@@ -1633,9 +1636,9 @@ c-----------------------------------------------------------------------
         do j=1,my-1
         do i=1,mx-1
            u(i,j,k) = u(i,j,k) + sa*( h2*r(i,j,k)-6*u(i,j,k)
-     $              + u(i-1,j,k) + u(i+1,j,k)
-     $              + u(i,j-1,k) + u(i,j+1,k)
-     $              + u(i,j,k-1) + u(i,j,k+1) )
+     &              + u(i-1,j,k) + u(i+1,j,k)
+     &              + u(i,j-1,k) + u(i,j+1,k)
+     &              + u(i,j,k-1) + u(i,j,k+1) )
         enddo
         enddo
         enddo
@@ -1794,10 +1797,10 @@ c-----------------------------------------------------------------------
 
       !call smooth_m(ukf,rkf,mx,my,mz,h,sigma,nsmooth,rf,iz,minIg,ldim)
 
-      if (nid.eq.6) then
+      !if (nid.eq.6) then
         !write(6,*) nid, ": original u:"
         !call print_3d(ukf, 11, 2, 2)
-      endif
+      !endif
 
       do nsmoth = nsmooth, nsmooth+1
         call copy(rfc,rf,mm1)
@@ -1816,20 +1819,23 @@ c-----------------------------------------------------------------------
 
           if (nid.eq.6) then
             if (mateq(v,w,0)) then ! the 0 excludes the faces from the comparison
-              write(6,*) nid, ": igs = ", ig, " matches result of "
-     $          , "igs = 0 for nsmooth = ", nsmoth, "!"
+              !write(6,*) nid, ": igs = ", ig, " matches result of "
+     &       !   , "igs = 0 for nsmooth = ", nsmoth, "!"
             else
               write(6,*) nid, ": igs = ", ig, " gave a different"
-     $          , " result than igs = 0 for nsmooth = ", nsmoth
-     $          , " (not including faces!):"
-              write(6,*) nid, ": result of igs = 0 (not including faces):"
+     &          , " result than igs = 0 for nsmooth = ", nsmoth
+     &          , " (not including faces!):"
+              write(6,*) nid, ": result of igs = 0:"
               call print_3d(v(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
               write(6,*) nid, ": result of igs = ", ig, ":"
               call print_3d(w(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
+
+              stop
+
             endif
           endif
         enddo
-        if (nid.eq.6) write(6,*) " "
+        !if (nid.eq.6) write(6,*) " "
       enddo
       end
 #endif
@@ -1873,11 +1879,14 @@ c-----------------------------------------------------------------------
             !write(6,*) nid,": jgx = ",jg," matches result of jgx = 0!"
           else
             write(6,*) nid, ": jgx = ", jg, " gave a different"
-     $        , " result than jgx = 0 (not including edges!):"
+     &        , " result than jgx = 0 (not including edges!):"
             write(6,*) nid, ": result of jgx = 0:"
             call print_3d(v, 5, 2, 2)
             write(6,*) nid, ": result of jgx =", jgx, ":"
             call print_3d(w, 5, 2, 2)
+
+            stop
+
           endif
         endif
       enddo
@@ -1902,7 +1911,7 @@ c-----------------------------------------------------------------------
 	        call xchange_3d_async(u)
         elseif (nid.eq.1) then
           write(6, *) nid, ": no xchange0 func ",
-     $      "corresponding to jgx = ", jgx, "!"
+     &      "corresponding to jgx = ", jgx, "!"
           call exitt
         endif
       endif
@@ -2408,9 +2417,9 @@ c       call xchange0(o,XCHANGE_JGX)
         do j=1,my-1
         do i=1,mx-1
            u(i,j,k) = o(i,j,k) + sa*( h2*r(i,j,k)-6*o(i,j,k)
-     $              + o(i-1,j,k) + o(i+1,j,k)
-     $              + o(i,j-1,k) + o(i,j+1,k)
-     $              + o(i,j,k-1) + o(i,j,k+1) )
+     &              + o(i-1,j,k) + o(i+1,j,k)
+     &              + o(i,j-1,k) + o(i,j+1,k)
+     &              + o(i,j,k-1) + o(i,j,k+1) )
         enddo
         enddo
         enddo

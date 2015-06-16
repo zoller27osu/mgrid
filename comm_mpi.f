@@ -33,7 +33,7 @@ c     set mpi real type-
 
 #ifdef catch_mpi_errs
       if (nid.eq.0) call MPI_Comm_set_errhandler(MPI_COMM_WORLD
-     $                                  ,MPI_ERRORS_RETURN,ier)
+     &                                  ,MPI_ERRORS_RETURN,ier)
       call gsync
 #endif
 
@@ -128,7 +128,7 @@ c-----------------------------------------------------------------------
       jnid = mpi_any_source
 
       call mpi_recv (buf,len,mpi_byte
-     $              ,jnid,msgtag,MPI_COMM_WORLD,status,ierr)
+     &              ,jnid,msgtag,MPI_COMM_WORLD,status,ierr)
 
       if (len.gt.lenm) then 
           write(6,*) nid,'long message in mpi_crecv:',len,lenm
@@ -198,7 +198,7 @@ c-----------------------------------------------------------------------
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
 
-      real*4 buf(1)
+      integer buf(1)
 
       call mpi_bcast (buf,len,mpi_byte,0,MPI_COMM_WORLD,ierr)
 
@@ -216,7 +216,7 @@ c
       integer wdsize
    
       call mpi_isend (x,len,mpi_byte,jnid,msgtag
-     $       ,MPI_COMM_WORLD,imsg,ierr)
+     &       ,MPI_COMM_WORLD,imsg,ierr)
       isend = imsg
 c     write(6,*) nid,' isend:',imsg,msgtag,len,jnid,(x(k),k=1,len/4)
    
@@ -234,7 +234,7 @@ c
       integer wdsize
    
       call mpi_irecv (x,len,mpi_byte,mpi_any_source,msgtag
-     $                ,MPI_COMM_WORLD,imsg,ierr)
+     &                ,MPI_COMM_WORLD,imsg,ierr)
       irecv = imsg
 c     write(6,*) nid,' irecv:',imsg,msgtag,len
    
@@ -256,7 +256,7 @@ c     Note: len in bytes
          irecv0 = mpi_request_null
       else
          call mpi_irecv (x,len,mpi_byte,mpi_any_source,msgtag
-     $       ,MPI_COMM_WORLD,imsg,ierr)
+     &       ,MPI_COMM_WORLD,imsg,ierr)
          irecv0 = imsg
       endif
 
@@ -310,7 +310,7 @@ c     Note: len in bytes
       else
         !write(6,*) nid, ": posting recv with tag = ", msgtag
         call mpi_irecv (x,num,itype,mpi_any_source,msgtag
-     $                    ,MPI_COMM_WORLD,irecv1,ierr)
+     &                    ,MPI_COMM_WORLD,irecv1,ierr)
 #ifdef catch_mpi_errs
         if (ierr.ne.MPI_SUCCESS) then
           call MPI_Error_string(ierr,str,lenres,ierr)
@@ -343,12 +343,12 @@ c     Note: len in bytes
       else
         !write(6,*) nid, ": posting recv with tag = ", msgtag
         call mpi_irecv (x,num,itype,MPI_ANY_SOURCE,msgtag
-     $                    ,MPI_COMM_WORLD,irecv2,ierr)
+     &                    ,MPI_COMM_WORLD,irecv2,ierr)
       endif
 #else
 c     ======  mpi_irecv can handle MPI_PROC_NULL just fine!  =======
         call mpi_irecv (x,num,itype,jnid,MPI_ANY_TAG
-     $                    ,MPI_COMM_WORLD,irecv2,ierr)
+     &                    ,MPI_COMM_WORLD,irecv2,ierr)
 #endif
 #ifdef catch_mpi_errs
       if (ierr.ne.MPI_SUCCESS) then
@@ -436,46 +436,44 @@ c-----------------------------------------------------------------------
         enddo
         return
         end function arreq
-
+c-----------------------------------------------------------------------
         function mateq(a,b,mnb)!mx,my,mz,mnb)
         include 'MGRID'
-        logical :: mateq
+        logical :: mateq, ib, jb, kb
         real, dimension(0:mx,0:my,0:mz) :: a,b
-        integer atbound = 0
         mateq = .TRUE.
+
         do k=0,mz
-          if ((k.eq.0).OR.(k.eq.mz)) atbound = atbound + 1
-          if (k.eq.1) atbound = atbound - 1
-          if (atbound.gt.mnb) cycle
+          kb = (k.eq.0).OR.(k.eq.mz)
+          if ((mnb.le.0).AND.kb) cycle
         do j=0,my
-          if ((j.eq.0).OR.(j.eq.my)) atbound = atbound + 1
-          if (j.eq.1) atbound = atbound - 1
-          if (atbound.gt.mnb) cycle
+          jb = (j.eq.0).OR.(j.eq.my)
+          if ((mnb.le.1).AND.jb.AND.((mnb.le.0).OR.kb)) cycle
         do i=0,mx
-          if ((i.eq.0).OR.(i.eq.mx)) atbound = atbound + 1
-          if (i.eq.1) atbound = atbound - 1
-          if (atbound.gt.mnb) cycle
+          ib = (i.eq.0).OR.(i.eq.mx)
+          if ((mnb.le.2).AND.ib.AND.((jb.AND.kb).OR.(mnb.le.0).OR.
+     &        ((mnb.le.1).AND.(jb.OR.kb)) ) ) cycle
 
           !if (nid.eq.6) then
-            !write(6,17) nid,mnb,i,mx,j,my,k,mz
-   !17       format(i3,": mnb=",i2," atbound=",i2," i,j,k="
-    !$       !   ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4)
+          !  write(6,17) nid,mnb,i,mx,j,my,k,mz,nz
+   17     !  format(i3,": mnb=",i2," i,j,k= "
+     &    !     ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4,i4)
           !endif
 
           if ((a(i,j,k).ne.b(i,j,k)).OR.ISNAN(a(i,j,k))
-     $                              .OR.ISNAN(b(i,j,k))) then
+     &                              .OR.ISNAN(b(i,j,k))) then
             if (nid.eq.6) then
               write(6,*) "different at",i,j,k
-     $                    ,"(",a(i,j,k),"vs",b(i,j,k),")"
+     &                    ,"(",a(i,j,k),"vs",b(i,j,k),")"
             endif
             mateq = .FALSE.
             return
           endif
         enddo
-        atbound = atbound - 1
         enddo
-        atbound = atbound - 1
         enddo
+        !if (nid.eq.6) write(6,*) nid, ": leaving mateq"
+
         return
         end function mateq
       END MODULE Comm_Funcs

@@ -8,7 +8,7 @@ P     = -s real64 -x f77-cpp-input
 FLAGS = -hnocaf -hnopgas_runtime -hnegmsgs -hscalar3 -hvector3 -hmpi1 -O3 -mcmodel=medium -hkeepfiles #-fbacktrace #-hdevelop -eD #-Wall -Og #-eI
 
 #CFLAGS   = -std=c99
-FFLAGS   = -e cnF -dX -S -Q bin -r d
+FFLAGS   = -e cmnF -dX -S -Q bin -r d
 
 NOBJS = comm_mpi.o x2p.o
 NOBJSC = #comm_mpi.ox2pc.o
