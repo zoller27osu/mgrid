@@ -42,7 +42,7 @@ x2p.o: x2p.F comm_mpi.o
 run: x2p
 ifeq ($(PE_ENV),CRAY)
     ifeq (,$(findstring nid,$(HOST)))
-	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=00:30:00
+	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
     else
 	#cd $(HOME)/scratch
 	aprun -n 64 $(HOME)/scratch/./x2p
