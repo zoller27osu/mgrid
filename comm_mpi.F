@@ -28,10 +28,10 @@ c
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
- 
+
       real x(n), w(n)
       character*3 op
- 
+
       if (op.eq.'+  ') then
          call mpi_allreduce (x,w,n,mgreal,mpi_sum ,mpi_comm_world,ierr)
       elseif (op.EQ.'M  ') then
@@ -74,7 +74,7 @@ c-----------------------------------------------------------------------
       call mpi_recv (buf,len,mpi_byte
      $              ,jnid,msgtag,mpi_comm_world,status,ierr)
 
-      if (len.gt.lenm) then 
+      if (len.gt.lenm) then
           write(6,*) nid,'long message in mpi_crecv:',len,lenm
           call exitt
       endif
@@ -113,16 +113,16 @@ c
 c     Note: len in bytes
 c
       integer x(1)
- 
+
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
- 
+
       call mpi_isend (x,len,mpi_byte,jnid,msgtag
      $       ,mpi_comm_world,imsg,ierr)
       isend = imsg
 c     write(6,*) nid,' isend:',imsg,msgtag,len,jnid,(x(k),k=1,len/4)
- 
+
       return
       end
 c-----------------------------------------------------------------------
@@ -131,17 +131,17 @@ c
 c     Note: len in bytes
 c
       integer x(1)
- 
+
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
- 
+
       call mpi_irecv (x,len,mpi_byte,mpi_any_source,msgtag
      $       ,mpi_comm_world,imsg,ierr)
       irecv = imsg
 c     write(6,*) nid,' irecv:',imsg,msgtag,len
- 
- 
+
+
       return
       end
 c-----------------------------------------------------------------------
@@ -170,7 +170,7 @@ c     write(6,*) nid,' irecv:',imsg,msgtag,len
       return
       end
 c-----------------------------------------------------------------------
-      subroutine csend0(msgtag,buf,len,jnid,jpid) 
+      subroutine csend0(msgtag,buf,len,jnid,jpid)
 
 !     return if msgtag < 0 or jnid < 0 or jnid > np
 
