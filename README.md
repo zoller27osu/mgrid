@@ -1,3 +1,15 @@
+TODO
+====
+
+- ping pong test
+- flops calculation makes assumptions about mpi_wtime() resolution
+- setup tau
+- check crayftn flags
+
+
+File Summaries
+==============
+
 ```bash
 comm_mpi.F # Wrappers for MPI functions
 in.dat # Input data for run(s)
@@ -6,23 +18,29 @@ MGRID # submodule-ish grouping of multigrid variables
 x2p.F # multigrid algorithm
 ```
 
+
 Input
 =====
 
 in.dat format
 -------------
 
+col# | var     | type            | description
+-----|---------|-----------------|--------------------------------------------
 col1 | nlev    | 4-byte int      | number of multigrid levels
 col2 | nsmooth | 4-byte int      | number of smoothings (unused?)
 col3 | igs     | 4-byte int      | {0,1} where 0 is jacobian, 1 is gaussian
-col4 | sigma   | word size float |
+col4 | sigma   | word size float | ...
 
 
 Variables
 =========
 
-ue | exact solution
-u  | multigrid method solution
+var | description
+----|-------------------------------------------------------------------------
+ue  | exact solution
+u   | multigrid method solution
+
 
 Output
 ======
@@ -30,6 +48,8 @@ Output
 if line ends in "max error[A-Z]"
 --------------------------------
 
+col#  | var  | description
+------|------|----------------------------------------------------------------
 col1  | ii   | number of iterations/passes (over by-one)
 col2  | dmax | some maximum in prolongation stages; heuristically? always 0
 col3  | emx  | "error", the max difference u[i] - ue[i] between all ranks
@@ -49,6 +69,8 @@ col15 | c1   | trial label; 'A' => ..., 'B' => ..., 'X' => ...
 if line ends in "flops[A-Z]"
 ----------------------------
 
+col#  | var    | description
+------|--------|--------------------------------------------------------------
 col1  | ii     | number of iterations/passes
 col2  | emx    | "error", the max difference u[i] - ue[i] between all ranks
 col3  | time   | delta = mpi_wtime()_end - mpi_wtime()_start
