@@ -1,0 +1,468 @@
+       !        
+       !        Cray Inc. Decompilation
+       !        Notice - This output is provided for information only.
+       !        
+       !        Cray Inc. reserves the right to change the format of this
+       !        information at any time and does not guarantee the
+       !        readability or accuracy of this information.
+       !        
+       !        This information may not be compilable and corresponds to
+       !        the internal representation of the program during the
+       !        optimization phase of the compilation process.
+       !        
+       !        Source                :  comm_mpi.F
+       !        File                  :  /mnt/a/u/sciteam/zoller/mgrid/bin/comm_mpi.cg
+       !        Network               :  Gemini interconnect
+       !        Target                :  X86 :: interlagos, avx, xop, fma, pic
+       !        
+    7.       
+    7.       subroutine init_proc
+   13.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   13.       call mpi_init( ierr )
+   15.       $Con_P2 = 1140850688
+   15.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 1[loc( nid ),0] )
+   15.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   15.       call mpi_comm_size( $Con_P2, 1[loc( nid ),0], ierr )
+   16.       $Con_P2 = 1140850688
+   16.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( nid ),0] )
+   16.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   16.       call mpi_comm_rank( $Con_P2, 0[loc( nid ),0], ierr )
+   23.       $CS_nid_1 = loc( nid )
+   23.       $CS_nid_0 = $CS_nid_1
+   23.       3[$CS_nid_0,0] = 8
+   24.       $MR_nid_S0 = 0[$CS_nid_0,0]
+   24.       if ( $MR_nid_S0 == 0 ) then
+   24.          _fwf( pointer to integer*8( loc( $_StaticCntrl_O0 ) ), pointer to integer*8( loc( $_StaticIolist_O2[0].L ) ), pointer to integer*8( loc( $_IO_Lib_Stack_O4 ) ) )
+   24.       endif
+   27.       $LCS_nid_1 = loc( nid )
+   27.       2[$LCS_nid_1,0] = 1275070495
+   29.       $MR_nid_S1 = 0[$LCS_nid_1,0]
+   29.       if ( $MR_nid_S1 == 0 ) then
+   30.          wtick = mpi_wtick
+   31.          $_StackIolist_O9 = $_StaticIolist_O7
+   31.          0[int( pointer to c_union Pointer_union( loc( (7,$_StackIolist_O9)[0].L ) ), 8 ),0].L = loc( wtick )
+   31.          _fwf( pointer to integer*8( loc( $_StaticCntrl_O5 ) ), pointer to integer*8( loc( $_StackIolist_O9[0].L ) ), pointer to integer*8( loc( $_IO_Lib_Stack_O4 ) ) )
+   31.       endif
+   40.       $LCS_lrtype_2 = loc( lrtype )
+   40.       0[$LCS_lrtype_2,0] = 0
+   41.       1[$LCS_lrtype_2,0] = 0
+   42.       2[$LCS_lrtype_2,0] = 0
+   45.       return
+   45.       end
+   45.       
+   47.       
+   47.       subroutine make_3d_types( mx1, my1, mz1, ioldtype, enable_fbtype )
+   52.       $MR_my1_1 = 0[loc( my1 ),0]
+   52.       t$5 = 0[loc( mz1 ),0] * $MR_my1_1
+   52.       $Con_P4 = 1
+   52.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), t$5 )
+   52.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( lrtype ),0] )
+   52.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   52.       call mpi_type_vector( t$5, $Con_P4, 0[loc( mx1 ),0], 0[loc( ioldtype ),0], 0[loc( lrtype ),0], ierr )
+   53.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( lrtype ),0] )
+   53.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   53.       call mpi_type_commit( 0[loc( lrtype ),0], ierr )
+   54.       $LCS_mx1_0 = loc( mx1 )
+   54.       $MR_mx1_S0 = 0[$LCS_mx1_0,0]
+   54.       t$5 = $MR_my1_1 * $MR_mx1_S0
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( mz1 ),0] )
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[$LCS_mx1_0,0] )
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), t$5 )
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( ioldtype ),0] )
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 1[loc( lrtype ),0] )
+   54.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   54.       call mpi_type_vector( 0[loc( mz1 ),0], 0[$LCS_mx1_0,0], t$5, 0[loc( ioldtype ),0], 1[loc( lrtype ),0], ierr )
+   55.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 1[loc( lrtype ),0] )
+   55.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   55.       call mpi_type_commit( 1[loc( lrtype ),0], ierr )
+   56.       if ( int( 0[loc( enable_fbtype ),0] ) /= 0 ) then
+   57.          $MR_mx1_S1 = 0[loc( mx1 ),0]
+   57.          t$5 = $MR_my1_1 * $MR_mx1_S1
+   57.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), t$5 )
+   57.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( ioldtype ),0] )
+   57.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( lrtype ),0] )
+   57.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   57.          call mpi_type_contiguous( t$5, 0[loc( ioldtype ),0], 2[loc( lrtype ),0], ierr )
+   58.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( lrtype ),0] )
+   58.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   58.          call mpi_type_commit( 2[loc( lrtype ),0], ierr )
+   58.       endif
+   63.       return
+   63.       end
+   63.       
+   65.       
+   65.       subroutine erase_3d_types
+   68.       $CS_lrtype_1 = loc( lrtype )
+   68.       $CS_lrtype_0 = $CS_lrtype_1
+   68.       if ( 1[$CS_lrtype_0,0] /= 0 ) then
+   69.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[$CS_lrtype_0,0] )
+   69.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   69.          call mpi_type_free( 0[$CS_lrtype_0,0], ierr )
+   70.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 1[$CS_lrtype_0,0] )
+   70.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   70.          call mpi_type_free( 1[$CS_lrtype_0,0], ierr )
+   70.       endif
+   72.       if ( 2[$CS_lrtype_0,0] /= 0 ) then
+   72.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[$CS_lrtype_0,0] )
+   72.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   72.          call mpi_type_free( 2[$CS_lrtype_0,0], ierr )
+   72.       endif
+   73.       $LCS_lrtype_2 = loc( lrtype )
+   73.       0[$LCS_lrtype_2,0] = 0
+   74.       1[$LCS_lrtype_2,0] = 0
+   75.       2[$LCS_lrtype_2,0] = 0
+   78.       return
+   78.       end
+   78.       
+   80.       
+   80.       subroutine gop( x, w, op, n )
+   91.       if ( substr[op,0:3] == '+  ' ) then
+   92.          $Con_P1 = 1476395011
+   92.          $Con_P2 = 1140850688
+   92.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( nid ),0] )
+   92.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   92.          call mpi_allreduce( 0[loc( x ),0].L, 0[loc( w ),0].L, 0[loc( n ),0], 2[loc( nid ),0], $Con_P1, $Con_P2, ierr )
+   93.       else if ( substr[op,0:3] == 'M  ' ) then
+   94.          $Con_P1 = 1476395009
+   94.          $Con_P2 = 1140850688
+   94.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( nid ),0] )
+   94.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   94.          call mpi_allreduce( 0[loc( x ),0].L, 0[loc( w ),0].L, 0[loc( n ),0], 2[loc( nid ),0], $Con_P1, $Con_P2, ierr )
+   94.       else if ( substr[op,0:3] == 'm  ' ) then
+   96.          $Con_P1 = 1476395010
+   96.          $Con_P2 = 1140850688
+   96.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( nid ),0] )
+   96.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   96.          call mpi_allreduce( 0[loc( x ),0].L, 0[loc( w ),0].L, 0[loc( n ),0], 2[loc( nid ),0], $Con_P1, $Con_P2, ierr )
+   96.       else if ( substr[op,0:3] == '*  ' ) then
+   98.          $Con_P1 = 1476395012
+   98.          $Con_P2 = 1140850688
+   98.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 2[loc( nid ),0] )
+   98.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+   98.          call mpi_allreduce( 0[loc( x ),0].L, 0[loc( w ),0].L, 0[loc( n ),0], 2[loc( nid ),0], $Con_P1, $Con_P2, ierr )
+   98.       else
+  100.          $_StackIolist_O3 = $_StaticIolist_O2
+  100.          0[int( pointer to c_union Pointer_union( loc( (3,$_StackIolist_O3)[0].L ) ), 8 ),0].L = loc( 0[loc( nid ),0] )
+  100.          0[int( pointer to c_union Pointer_union( loc( (11,$_StackIolist_O3)[0].L ) ), 8 ),0].L = loc( substr[op,0:3] )
+  100.          _fwf( pointer to integer*8( loc( $_StaticCntrl_O0 ) ), pointer to integer*8( loc( $_StackIolist_O3[0].L ) ), pointer to integer*8( loc( $_IO_Lib_Stack_O6 ) ) )
+  101.          call exitt
+  101.       endif
+  104.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( x ),0].L )
+  104.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( w ),0].L )
+  104.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( n ),0] )
+  104.       call copy( 0[loc( x ),0].L, 0[loc( w ),0].L, 0[loc( n ),0] )
+  107.       return
+  107.       end
+  107.       
+  109.       
+  109.       subroutine csend( msgtag, buf, len, jnid, jpid )
+  115.       $Con_P2 = 1275068685
+  115.       $Con_P3 = 1140850688
+  115.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  115.       call mpi_send( 0[loc( buf ),0], 0[loc( len ),0], $Con_P2, 0[loc( jnid ),0], 0[loc( msgtag ),0], $Con_P3, ierr )
+  118.       return
+  118.       end
+  118.       
+  120.       
+  120.       subroutine crecv( msgtag, buf, lenm )
+  127.       len = 0[loc( lenm ),0]
+  128.       jnid = -2
+  130.       $Con_P3 = 1275068685
+  130.       $Con_P4 = 1140850688
+  130.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), len )
+  130.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), jnid )
+  130.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), status[0] )
+  130.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  130.       call mpi_recv( 0[loc( buf ),0], len, $Con_P3, jnid, 0[loc( msgtag ),0], $Con_P4, status[0], ierr )
+  139.       return
+  139.       end
+  139.       
+  141.       
+  141.       subroutine gsync
+  147.       $Con_P0 = 1140850688
+  147.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  147.       call mpi_barrier( $Con_P0, ierr )
+  151.       return
+  151.       end
+  151.       
+  153.       
+  153.       subroutine msgwait( imsg )
+  160.       $LCS_imsg_0 = loc( imsg )
+  160.       if ( 0[$LCS_imsg_0,0] /= 738197504 ) then
+  163.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), status[0] )
+  163.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  163.          call mpi_wait( 0[$LCS_imsg_0,0], status[0], ierr )
+  163.       endif
+  166.       return
+  166.       end
+  166.       
+  168.       
+  168.       subroutine csend0( msgtag, buf, len, jnid, jpid )
+  175.       $LCS_msgtag_1 = loc( msgtag )
+  175.       if ( 0[$LCS_msgtag_1,0] >= 0 ) then
+  176.          $LCS_jnid_0 = loc( jnid )
+  176.          $MR_jnid_3 = 0[$LCS_jnid_0,0]
+  176.          if ( $MR_jnid_3 >= 0 ) then
+  177.             if ( $MR_jnid_3 < 1[loc( nid ),0] ) then
+  179.                $Con_P5 = 1275068685
+  179.                $Con_P6 = 1140850688
+  179.                _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  179.                call mpi_send( 0[loc( buf ),0], 0[loc( len ),0], $Con_P5, 0[$LCS_jnid_0,0], 0[$LCS_msgtag_1,0], $Con_P6, ierr )
+  179.             endif
+  179.          endif
+  179.       endif
+  182.       return
+  182.       end
+  182.       
+  184.       
+  184.       subroutine exitt
+  187.       call erase_3d_types
+  189.       call gsync
+  190.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  190.       call mpi_finalize( ierr )
+  191.       t$15 = 0
+  191.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), t$15 )
+  191.       call exit( t$15 )
+  194.       return
+  194.       end
+  194.       
+  196.       
+  196.       subroutine bcast( buf, len )
+  203.       $Con_P0 = 1275068685
+  203.       $Con_P1 = 0
+  203.       $Con_P2 = 1140850688
+  203.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  203.       call mpi_bcast( 0[loc( buf ),0], 0[loc( len ),0], $Con_P0, $Con_P1, $Con_P2, ierr )
+  206.       return
+  206.       end
+  206.       
+  208.       
+  208.       integer*4
+  208.       function isend( msgtag, x, len, jnid, jpid )
+  218.       $Con_P1 = 1275068685
+  218.       $Con_P2 = 1140850688
+  218.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), imsg )
+  218.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  218.       call mpi_isend( 0[loc( x ),0].L, 0[loc( len ),0], $Con_P1, 0[loc( jnid ),0], 0[loc( msgtag ),0], $Con_P2, imsg, ierr )
+  224.       isend = imsg
+  224.       return
+  224.       end
+  224.       
+  226.       
+  226.       integer*4
+  226.       function irecv( msgtag, x, len )
+  236.       $Con_P1 = 1275068685
+  236.       $Con_P2 = -2
+  236.       $Con_P3 = 1140850688
+  236.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), imsg )
+  236.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  236.       call mpi_irecv( 0[loc( x ),0].L, 0[loc( len ),0], $Con_P1, $Con_P2, 0[loc( msgtag ),0], $Con_P3, imsg, ierr )
+  242.       irecv = imsg
+  242.       return
+  242.       end
+  242.       
+  244.       
+  244.       integer*4
+  244.       function irecv0( msgtag, x, len )
+  253.       if ( 0[loc( msgtag ),0] < 0 ) then
+  254.          n = 0[loc( len ),0] / 3[loc( nid ),0]
+  255.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), n )
+  255.          call rzero( 0[loc( x ),0].L, n )
+  256.          $irecv0_S1 = 738197504
+  256.       else
+  258.          $Con_P5 = 1275068685
+  258.          $Con_P6 = -2
+  258.          $Con_P7 = 1140850688
+  258.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), imsg )
+  258.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  258.          call mpi_irecv( 0[loc( x ),0].L, 0[loc( len ),0], $Con_P5, $Con_P6, 0[loc( msgtag ),0], $Con_P7, imsg, ierr )
+  260.          $irecv0_S1 = imsg
+  260.       endif
+  266.       irecv0 = $irecv0_S1
+  266.       return
+  266.       end
+  266.       
+  269.       
+  269.       subroutine csend1( msgtag, x, itype, num, jnid )
+  275.       $LCS_msgtag_1 = loc( msgtag )
+  275.       if ( 0[$LCS_msgtag_1,0] >= 0 ) then
+  275.          $LCS_jnid_0 = loc( jnid )
+  275.          if ( 0[$LCS_jnid_0,0] /= -1 ) then
+  277.             $Con_P4 = 1140850688
+  277.             _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  277.             call mpi_send( 0[loc( x ),0].L, 0[loc( num ),0], 0[loc( itype ),0], 0[$LCS_jnid_0,0], 0[$LCS_msgtag_1,0], $Con_P4, ierr )
+  277.          endif
+  277.       endif
+  280.       return
+  280.       end
+  280.       
+  282.       
+  282.       integer*4
+  282.       function isend1( msgtag, x, itype, num, jnid )
+  288.       $LCS_msgtag_1 = loc( msgtag )
+  288.       if ( 0[$LCS_msgtag_1,0] >= 0 ) then
+  288.          $LCS_jnid_0 = loc( jnid )
+  288.          if ( 0[$LCS_jnid_0,0] == -1 ) then
+  288.             goto 10
+  288.          else
+  291.             $Con_P2 = 1140850688
+  291.             _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), isend1 )
+  291.             _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  291.             call mpi_isend( 0[loc( x ),0].L, 0[loc( num ),0], 0[loc( itype ),0], 0[$LCS_jnid_0,0], 0[$LCS_msgtag_1,0], $Con_P2, isend1, ierr )
+  291.          endif
+  291.       else
+  291.    10    continue
+  289.          isend1 = 738197504
+  289.       endif
+  296.       isend1 = isend1
+  296.       return
+  296.       end
+  296.       
+  298.       
+  298.       integer*4
+  298.       function irecv1( msgtag, x, itype, num )
+  308.       if ( 0[loc( msgtag ),0] < 0 ) then
+  309.          irecv1 = 738197504
+  309.       else
+  312.          $Con_P1 = -2
+  312.          $Con_P2 = 1140850688
+  312.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), irecv1 )
+  312.          _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  312.          call mpi_irecv( 0[loc( x ),0].L, 0[loc( num ),0], 0[loc( itype ),0], $Con_P1, 0[loc( msgtag ),0], $Con_P2, irecv1, ierr )
+  312.       endif
+  325.       irecv1 = irecv1
+  325.       return
+  325.       end
+  325.       
+  327.       
+  327.       integer*4
+  327.       function irecv2( msgtag, x, itype, num, jnid )
+  350.       $Con_P0 = -1
+  350.       $Con_P1 = 1140850688
+  350.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), irecv2 )
+  350.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  350.       call mpi_irecv( 0[loc( x ),0].L, 0[loc( num ),0], 0[loc( itype ),0], 0[loc( jnid ),0], $Con_P0, $Con_P1, irecv2, ierr )
+  363.       irecv2 = irecv2
+  363.       return
+  363.       end
+  363.       
+  365.       
+  365.       subroutine msgwaitall( imsgs, num )
+  382.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), 0[loc( mpi_statuses_ignore ),0] )
+  382.       _gprefetch( _op2( 1, 1 ), _op2( 0, 0 ), ierr )
+  382.       call mpi_waitall( 0[loc( num ),0], 0[loc( imsgs ),0], 0[loc( mpi_statuses_ignore ),0], ierr )
+  403.       return
+  403.       end
+  403.       
+  407.       
+  407.       real*8
+  407.       function dclock
+  412.       $dclock_S0 = mpi_wtime
+  421.       dclock = $dclock_S0
+  421.       return
+  421.       end
+  421.       
+  423.       
+  423.       logical
+  423.       function arreq( a, b, n )
+  427.       $arreq_S2 = .true.
+  428.       $MR_n_0 = 0[loc( n ),0]
+  428.       if ( $MR_n_0 > 0 ) then
+  428.          $I_L428_S1 = 0
+  436.          $LIS_b2 = $MR_n_0
+  429.          $LIS_b0 = loc( b )
+  429.          $LIS_b1 = loc( a )
+  428.          do
+  429.             if ( 0[$LIS_b1,$I_L428_S1].L /= 0[$LIS_b0,$I_L428_S1].L ) then
+  430.                if ( 0[loc( nid ),0] == 6 ) then
+  431.                   $IOitem_O0 = ( 1 + $I_L428_S1 )
+  431.                   $IOitem_O1 = 0[loc( a ),$I_L428_S1].L
+  431.                   $IOitem_O2 = 0[loc( b ),$I_L428_S1].L
+  431.                   $_StackIolist_O7 = $_StaticIolist_O5
+  431.                   0[int( pointer to c_union Pointer_union( loc( (7,$_StackIolist_O7)[0].L ) ), 8 ),0].L = loc( $IOitem_O0 )
+  431.                   0[int( pointer to c_union Pointer_union( loc( (15,$_StackIolist_O7)[0].L ) ), 8 ),0].L = loc( $IOitem_O1 )
+  431.                   0[int( pointer to c_union Pointer_union( loc( (23,$_StackIolist_O7)[0].L ) ), 8 ),0].L = loc( $IOitem_O2 )
+  431.                   _fwf( pointer to integer*8( loc( $_StaticCntrl_O3 ) ), pointer to integer*8( loc( $_StackIolist_O7[0].L ) ), pointer to integer*8( loc( $_IO_Lib_Stack_O11 ) ) )
+  431.                endif
+  433.                $arreq_S2 = .false.
+  433.                goto 10
+  433.             endif
+  436.             $I_L428_S1 = 1 + $I_L428_S1
+  436.             if ( $I_L428_S1 >= $LIS_b2 ) exit
+  436.          enddo
+  436.       endif
+  436.    10 continue
+  438.       arreq = $arreq_S2
+  438.       return
+  438.       end
+  438.       
+  440.       
+  440.       logical
+  440.       function mateq( a, b, mnb )
+  444.       $mateq_S19 = .true.
+  446.       $LCS_istx_0 = loc( istx )
+  446.       $MR_mz_2 = 8[$LCS_istx_0,0]
+  446.       if ( $MR_mz_2 >= 0 ) then
+  446.          $I_L446_S1 = 0
+  463.          $SR_S2 = 0
+  463.          $SR_S3 = 0
+  463.          $SR_S4 = 0
+  463.          $MR_mx_3 = 6[$LCS_istx_0,0]
+  463.          $MR_my_4 = 7[$LCS_istx_0,0]
+  463.          $LCS_MR_mx_1 = $MR_mx_3
+  463.          $LCS_MR_my_2 = $MR_my_4
+  463.          $LIS_b63 = $LCS_MR_mx_1 * $LCS_MR_my_2
+  474.          $LIS_b64 = 1 + $MR_mz_2
+  448.          $LIS_b59 = -$MR_mz_2
+  463.          $LIS_b61 = $MR_my_4
+  449.          $LIS_b60 = $MR_my_4 < 0
+  448.          $MR_mnb_5 = 0[loc( mnb ),0]
+  448.          $LIS_b58 = $MR_mnb_5 > 0
+  473.          $LIS_b57 = 1 + $LCS_MR_my_2
+  451.          $LIS_b51 = -$MR_my_4
+  452.          $LIS_b54 = $MR_mx_3 < 0
+  451.          $LIS_b50 = $MR_mnb_5 > 1
+  451.          $LIS_b52 = $MR_mnb_5 <= 0
+  454.          $LIS_b55 = $MR_mnb_5 > 2
+  472.          $LCS_1_3 = 1 + $MR_mx_3
+  463.          $LCS_b_4 = loc( b )
+  463.          $LCS_a_5 = loc( a )
+  454.          $LCS_6 = -$MR_mx_3
+  446.          do
+  448.             if ( $LIS_b58 .orelse. int( $I_L446_S1 == 0 .or. $LIS_b59 + $I_L446_S1 == 0 ) == 0 ) then
+  449.                if ( int( $LIS_b60 ) == 0 ) then
+  449.                   $I_L449_S5 = 0
+  463.                   $SR_S6 = $SR_S4 + $I_L446_S1 + $SR_S3 + $SR_S2
+  451.                   $LIS_b53 = $I_L446_S1 == 0 .or. $LIS_b59 + $I_L446_S1 == 0
+  449.                   do
+  451.                      if ( $LIS_b50 .orelse. int( $I_L449_S5 == 0 .or. $LIS_b51 + $I_L449_S5 == 0 ) == 0 ) then
+  452.                         if ( $LIS_b54 ) then
+  463.                            $SR_S6 = $LCS_MR_mx_1 + $SR_S6
+  473.                            $I_L449_S5 = 1 + $I_L449_S5
+  473.                         else if ( int( $LIS_b55 ) == 0 ) then
+  473.                         else
+  473.                         endif
+  473.                      else
+  473.                      endif
+  473.                      if ( $I_L449_S5 >= $LIS_b57 ) exit
+  473.                   enddo
+  463.                   $SR_S2 = $LIS_b61 + $SR_S2
+  463.                   $SR_S3 = $LCS_MR_mx_1 + $SR_S3
+  463.                   $SR_S4 = $LIS_b63 + $SR_S4
+  474.                   $I_L446_S1 = 1 + $I_L446_S1
+  474.                else
+  474.                endif
+  474.             else
+  474.             endif
+  474.             if ( $I_L446_S1 >= $LIS_b64 ) exit
+  474.          enddo
+  474.       endif
+  478.       mateq = $mateq_S19
+  478.       return
+  478.       end
+  478.       
+  405.       
+  405.       module comm_funcs
+  479.       return
+  479.       end
+  479.       
