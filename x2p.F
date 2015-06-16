@@ -1884,7 +1884,7 @@ c-----------------------------------------------------------------------
      &        , " result than jgx = 0 (not including edges!):"
             write(6,*) nid, ": result of jgx = 0:"
             call print_3d(v, 5, 2, 2)
-            write(6,*) nid, ": result of jgx =", jgx, ":"
+            write(6,*) nid, ": result of jgx =", jg, ":"
             call print_3d(w, 5, 2, 2)
 
             stop
@@ -1910,7 +1910,7 @@ c-----------------------------------------------------------------------
         elseif (jgx.eq.1) then
           call xchange_3d(u)
         elseif (jgx.eq.2) then
-	        call xchange_3d_async(u)
+          call xchange_3d_async(u)
         elseif (nid.eq.1) then
           write(6, *) nid, ": no xchange0 func ",
      &      "corresponding to jgx = ", jgx, "!"
