@@ -44,6 +44,8 @@ c-----------------------------------------------------------------------
 
       call init_proc   ! Initialize parallel mode
 
+      if (nid.eq.0) write(6,*) nid, ": num MPI procs = ", np
+
       call get_proc_mpqr (mp,mq,mr,np,ldim)             ! processor decomp
       call get_proc_ijk  (ip,iq,ir,nid,mp,mq,mr,0,ldim) ! nid = (ip,iq,ir)
 
