@@ -34,6 +34,6 @@ comm_mpi.o: comm_mpi.f MGRID
 run: x2p
 	mpiexec ./x2p
 clean:
-	rm -f $(OBJS) x2p x.x
+	rm -f $(OBJS) x2p x.x *.mod
 deploy: x2p
 	cp x2p $(HOME)/scratch/
