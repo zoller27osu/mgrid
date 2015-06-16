@@ -1,0 +1,20 @@
+c vim: set syntax=fortran:
+      parameter(ldim=3,lpow=7)
+      parameter(lx=(2**lpow)+2,lt=(ldim+1)*(lx**ldim)/ldim)
+
+      common/ cmgmpi   / nid,np,mgreal,wdsize
+      integer wdsize
+
+      common/ cprocpqr / ip,iq,ir,mp,mq,mr
+
+      common/ cstart   / istx,isty,istz,iedx,iedy,iedz
+     $                 , mx,my,mz,nx,ny,nz
+     $                 , lev,nlev, ipass
+
+      common/ ctags    / mtagsl,mtagsr,mtagsd,mtagsu,mtagsb,mtagsf
+      common/ ctagr    / mtagrl,mtagrr,mtagrd,mtagru,mtagrb,mtagrf
+      common/ cneigh   / jmx,jpx,jmy,jpy,jmz,jpz
+
+      common/ cnid     / nidl,nidr,nidd,nidu,nidb,nidf
+
+      common/ ctags    / nnid(6,lpow+2),ntagr(6,lpow+2),ntags(6,lpow+2)
