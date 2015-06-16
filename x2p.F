@@ -20,8 +20,9 @@ c-----------------------------------------------------------------------
 #define JAC3D_JGX 0
 !#define enable_FBtype
 
-#define verify_jacobi_alts
 #define verify_xchange
+#define verify_jacobi_alts
+#define allow_math_differences
 
 !#define conservative_mpi_dtype_recreate
 
@@ -122,16 +123,15 @@ c-----------------------------------------------------------------------
 
       dmax = 0.
 
-c     ======== Test Jacobi Alts =========
-#ifdef verify_jacobi_alts
-      call test_alts(u(kf),r(kf),h,sigma,nsmooth,rf,iz,2,4) ! last 2 parameters are min/max "igs"
-#endif
-
 c     ======== Test Xchange Alts=========
 #ifdef verify_xchange
       call test_xchange(u,1,2) ! last 2 parameters are min/max "jgx"
 #endif
 
+c     ======== Test Jacobi Alts =========
+#ifdef verify_jacobi_alts
+      call test_alts(u(kf),r(kf),h,sigma,nsmooth,rf,iz,2,4) ! last 2 parameters are min/max "igs"
+#endif
 
 c     ========   Time Xchange  =========
       call gsync
@@ -1832,8 +1832,9 @@ c-----------------------------------------------------------------------
               write(6,*) nid, ": result of igs = ", ig, ":"
               call print_3d(w(1:mx-1,1:my-1,1:mz-1), 5, 2, 2)
 
+#ifndef allow_math_differences
               stop
-
+#endif
             endif
           endif
         enddo
