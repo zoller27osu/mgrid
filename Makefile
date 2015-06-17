@@ -40,7 +40,7 @@ x2p.o: x2p.F comm_mpi.o
 
 ping_pong: ping_pong.o
 	$(FC) $(LDFLAGS) -o $@ $^
-ping_pong.o: ping_pong.F comm_mpi.o
+ping_pong.o: ping_pong.F
 
 ##############################################################################
 

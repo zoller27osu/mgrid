@@ -1,23 +1,23 @@
 !#define mem_realignment
 
 #ifdef mem_realignment
-#  define MESSAGE_ALIGNMENT 64
+#  define MESSAGE_ALIGNMENT (64)
 #else
-#  define MESSAGE_ALIGNMENT 0
+#  define MESSAGE_ALIGNMENT (0)
 #endif
 !#define MAX_MSG_SIZE 100000
-#define MAX_MSG_SIZE 2**20
+#define MAX_MSG_SIZE (2**20)
 #define MYBUFSIZE (MAX_MSG_SIZE + MESSAGE_ALIGNMENT)
 #define SKIP_LARGE  10
 #define LOOP_LARGE  100
 #define SKIP_SMALL  1000
 #define LOOP_SMALL  10000
-#define LARGE_MSG_SIZE  8192
+#define LARGE_MSG_SIZE  (8192)
 
 #ifdef mem_realignment
-#  define MAX_ALIGNMENT 16384
+#  define MAX_ALIGNMENT (16384)
 #else
-#  define MAX_ALIGNMENT 0
+#  define MAX_ALIGNMENT (0)
 #endif
 !#define MAX_MSG_SIZE (1<<7)
 #define MAX_STEPS    (22+1)
@@ -30,19 +30,20 @@
 char s_buf_original[MYBUFSIZE]
 char r_buf_original[MYBUFSIZE]
 
-#ifndef FIELD_WIDTH
-#  define FIELD_WIDTH 20
-#endif
+!#ifndef FIELD_WIDTH
+!#  define FIELD_WIDTH 20
+!#endif
 
-#ifndef FLOAT_PRECISION
-#  define FLOAT_PRECISION 2
-#endif
-      
-      program main
+!#ifndef FLOAT_PRECISION
+!#  define FLOAT_PRECISION 2
+!#endif
+
+      program ping_pong
       IMPLICIT NONE
       include 'mpif.h'
-      
-      integer :: nid, np, ierr
+
+      integer nid, np, wdsize, ierr
+      real :: eps, oeps
 
       call MPI_Init(ierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, np, ierr)
@@ -58,9 +59,18 @@ char r_buf_original[MYBUFSIZE]
 
         stop
       endif
-      
-      if (nid.eq.0) write(6,*) nid,": MAXBUFSIZE, MYBUFSIZE =", 
-     &      MAXBUFSIZE, MYBUFSIZE, __LINE__
+
+      wdsize = 4
+      eps = 1.0e-12
+      oeps = eps + 1
+      if (oeps.ne.(1.0)) then
+        wdsize = 8
+      endif
+
+      if (nid.eq.0) write(6,*) nid,": wordsize in bytes =", wdsize
+
+      if (nid.eq.0) write(6,*) nid,": MYBUFSIZE, MAXBUFSIZE =", 
+     &      MYBUFSIZE, MAXBUFSIZE, __LINE__
       
       call single_lat(nid, np)
       if (nid.eq.0) write(6,*) " "
@@ -68,7 +78,8 @@ char r_buf_original[MYBUFSIZE]
 
       call MPI_Finalize(ierr)
       return !EXIT_SUCCESS
-      end
+      end program
+
 c-----------------------------------------------------------------------
       subroutine single_lat(nid, np)
       IMPLICIT NONE
@@ -104,7 +115,7 @@ c**************Memory Allocation Done*********************
       if (nid.eq.0) then
         !write(6,*) HEADER ! where does HEADER come from?
         !fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Latency (us)")
-        write(6,*) "       Words        Latency (us)"
+        write(6,*) "Size (bytes)        Latency (us)"
         !call fflush(stdout)
       endif
       
@@ -166,7 +177,7 @@ c**************Memory Allocation Done*********************
           size = size * 2
         endif
         
-        if (size.gt.MAX_MSG_SIZE) exit
+        if (size.gt.MAX_MSG_SIZE) return
       enddo
       
       !call MPI_Barrier(MPI_COMM_WORLD, ierr)
@@ -224,11 +235,11 @@ c-----------------------------------------------------------------------
       send_first = (nid.lt.pairs)
       loop = MULTI_LOOP_SMALL
       skip = MULTI_SKIP_SMALL
-      
+
       if (nid.eq.0) then
         !fprintf(stdout, HEADER)
         !fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Latency (us)")
-        write(6,*) "       Words        Latency (us)"
+        write(6,*) "Size (bytes)        Latency (us)"
   !*hjw: */
         !fprintf(stdout, "# [ pairs: %d ] \n", pairs)
         !write(6,*) "# [ pairs:", pairs, "] "
