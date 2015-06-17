@@ -26,19 +26,21 @@ else # normal MPI, as on workstations
         LDFLAGS = -O3 -mcmodel=medium
 endif
 
-OBJS = comm_mpi.o x2p.o
+X2P_OBJS = comm_mpi.o x2p.o
+PP_OBJS = ping_pong.o
+OBJS = $(X2P_OBJS) $(PP_OBJS)
 
 ##############################################################################
 
 all: x2p ping_pong
 
 # Explicitly spell this one out otherwise uses C linker
-x2p: $(OBJS)
+x2p: $(X2P_OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
 comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
 
-ping_pong: ping_pong.o
+ping_pong: $(PP_OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
 ping_pong.o: ping_pong.F
 
@@ -58,7 +60,7 @@ else
 endif
 
 clean:
-	rm -rf $(OBJS) x2p x.x *.mod bin/*
+	rm -rf $(OBJS) x2p ping_pong x.x *.mod bin/*
 deploy: x2p
 ifeq ($(PE_ENV),CRAY)
 	cp x2p $(HOME)/scratch/
