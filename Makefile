@@ -1,19 +1,28 @@
 # Variables implicitly used by GNU Make to autocreate targets.
 # Conditionally use different parameters if running on cray compiler.
-# Flags: DEBUG_OUT, NUMERICAL_OUT
+
+HOST=$(shell hostname)
+
 ifeq ($(PE_ENV),CRAY)
         FC = ftn
-        FFLAGS = -O3 -s real64
-        LDFLAGS = -O3
-else
-	ifeq ($(USER),oychang)
+	FLAGS = -O3 -s real64 -M 124,1058 -hnocaf -hnopgas_runtime -hmpi1 \
+		-hpic #first half of mcmodel=medium equivalent
+		#-hvector3 -hscalar3 \
+		#-hnegmsgs \
+		#-fbacktrace \
+		#-hdevelop -eD \
+		#-Wall -Og #-eI
+        FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
+	#-dX: 10,000-variable-module initialize-before-main thing
+        LDFLAGS = $(FLAGS) -dynamic #second half of mcmodel=medium equivalent
+else # normal MPI, as on workstations
+        ifeq ($(USER),oychang)
 		FC = mpif77.mpich2
-	else
+        else
 		FC = mpif77
-	endif
-
+        endif
         FFLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 \
-		-DDEBUG_OUT
+		-DDEBUG_OUT #-fbacktrace #-Wall -Og
         LDFLAGS = -O3 -mcmodel=medium
 endif
 
@@ -24,16 +33,28 @@ OBJS = comm_mpi.o x2p.o
 # Explicitly spell this one out otherwise uses C linker
 x2p: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
-x2p.o: x2p.F
 comm_mpi.o: comm_mpi.F MGRID
+x2p.o: x2p.F comm_mpi.o
 
 ##############################################################################
 
 .PHONY: clean deploy run
 run: x2p
-	mpiexec ./x2p
+ifeq ($(PE_ENV),CRAY)
+    ifeq (,$(findstring nid,$(HOST)))
+	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
+    else
+	#cd $(HOME)/scratch
+	aprun -n 64 $(HOME)/scratch/./x2p
+    endif
+else
+	mpiexec -n 8 ./x2p
+endif
+
 clean:
-	$(RM) $(OBJS) x2p x.x *.mod
+	rm -rf $(OBJS) x2p x.x *.mod bin/*
 deploy: x2p
+ifeq ($(PE_ENV),CRAY)
 	cp x2p $(HOME)/scratch/
 	cp in.dat $(HOME)/scratch/
+endif
