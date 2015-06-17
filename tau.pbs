@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -l nodes=2:ppn=32:xe
+#PBS -l walltime=00:05:00
+#PBS -N tautest
+#PBS -m bea 
+#PBS -M oliver@oychang.com
+
+. /opt/modules/default/init/bash
+module load tau
+
+cd $PBS_O_WORKDIR
+
+aprun -n 64 tau_exec -T mpi ./x2p > output.out
