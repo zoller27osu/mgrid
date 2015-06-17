@@ -1,12 +1,3 @@
-TODO
-====
-
-- ping pong test
-- flops calculation makes assumptions about mpi_wtime() resolution
-- setup tau
-- check crayftn flags
-
-
 File Summaries
 ==============
 
@@ -28,7 +19,7 @@ in.dat format
 col# | var     | type            | description
 -----|---------|-----------------|--------------------------------------------
 col1 | nlev    | 4-byte int      | number of multigrid levels
-col2 | nsmooth | 4-byte int      | number of smoothings (unused?)
+col2 | nsmooth | 4-byte int      | number of smoothings
 col3 | igs     | 4-byte int      | {0,1} where 0 is jacobian, 1 is gaussian
 col4 | sigma   | word size float | ...
 
