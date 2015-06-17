@@ -8,9 +8,9 @@ ifeq ($(PE_ENV),CRAY)
 	FLAGS = -O3 -s real64 -M 124,1058 -hnocaf -hnopgas_runtime -hmpi1 \
 		-hpic \ #first half of mcmodel=medium equivalent
 		#-hvector3 -hscalar3 \
-		#-hnegmsgs \ 
-		#-fbacktrace \ 
-		#-hdevelop -eD \ 
+		#-hnegmsgs \
+		#-fbacktrace \
+		#-hdevelop -eD \
 		#-Wall -Og #-eI
         FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
 	#-dX: 10,000-variable-module initialize-before-main thing
@@ -42,7 +42,7 @@ x2p.o: x2p.F comm_mpi.o
 run: x2p
 	mpiexec -n 8 ./x2p
 clean:
-	rm -f $(OBJS) x2p x.x *.mod bin/*
+	rm -rf $(OBJS) x2p x.x *.mod bin
 deploy: x2p
 	cp x2p $(HOME)/scratch/
 	cp in.dat $(HOME)/scratch/
