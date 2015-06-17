@@ -4,6 +4,7 @@ x2p
 *.swp
 *~
 scratch/
-bin/
 profile*
 *.out
+*.cg
+*.opt
