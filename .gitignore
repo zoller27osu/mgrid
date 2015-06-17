@@ -1,3 +1,6 @@
 *.o
 x2p
 *.mod
+*.swp
+*~
+scratch/
