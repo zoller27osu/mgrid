@@ -46,6 +46,3 @@ endif
 
 clean:
 	$(RM) $(OBJS) x2p x.x *.mod *.cg *.opt
-deploy: x2p
-	cp x2p $(HOME)/scratch/
-	cp in.dat $(HOME)/scratch/
