@@ -6,7 +6,7 @@ HOST=$(shell hostname)
 ifeq ($(PE_ENV),CRAY)
         FC = ftn
 	FLAGS = -O3 -s real64 -M 124,1058 -hnocaf -hnopgas_runtime -hmpi1 \
-		-hpic \ #first half of mcmodel=medium equivalent
+		-hpic #first half of mcmodel=medium equivalent
 		#-hvector3 -hscalar3 \
 		#-hnegmsgs \
 		#-fbacktrace \
@@ -52,7 +52,7 @@ else
 endif
 
 clean:
-	rm -rf $(OBJS) x2p x.x *.mod bin
+	rm -rf $(OBJS) x2p x.x *.mod bin/*
 deploy: x2p
 ifeq ($(PE_ENV),CRAY)
 	cp x2p $(HOME)/scratch/
