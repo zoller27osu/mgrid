@@ -14,7 +14,7 @@ ifeq ($(PE_ENV),CRAY)
 		#-Wall -Og #-eI
         FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
 	#-dX: 10,000-variable-module initialize-before-main thing
-        LDFLAGS = $(FLAGS) -dynamic #second half of mcmodel=medium equivalent
+        LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else # normal MPI, as on workstations
         ifeq ($(USER),oychang)
 		FC = mpif77.mpich2
@@ -30,11 +30,17 @@ OBJS = comm_mpi.o x2p.o
 
 ##############################################################################
 
+all: x2p ping_pong
+
 # Explicitly spell this one out otherwise uses C linker
 x2p: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
 comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
+
+ping_pong: ping_pong.o
+	$(FC) $(LDFLAGS) -o $@ $^
+ping_pong.o: ping_pong.F comm_mpi.o
 
 ##############################################################################
 
