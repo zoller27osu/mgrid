@@ -30,9 +30,11 @@ X2P_OBJS = comm_mpi.o x2p.o
 PP_OBJS = ping_pong.o
 OBJS = $(X2P_OBJS) $(PP_OBJS)
 
+EXECS = x2p intraer ping_pong
+
 ##############################################################################
 
-all: x2p ping_pong
+all: $(EXECS)
 
 # Explicitly spell this one out otherwise uses C linker
 x2p: $(X2P_OBJS)
@@ -40,29 +42,60 @@ x2p: $(X2P_OBJS)
 comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
 
-ping_pong: $(PP_OBJS)
+intraer: intraer.F
+	$(FC) $(LDFLAGS) -o $@ $^
+
+ping_pong: ping_pong.F
 	$(FC) $(LDFLAGS) -o $@ $^
 ping_pong.o: ping_pong.F
 
 ##############################################################################
 
-.PHONY: clean deploy run
-run: x2p
+.PHONY: clean deploy debug runx2p
+
+clean:
+	rm -rf $(OBJS) $(EXECS) x.x *.mod bin/*
+
+deploy: x2p ping_pong
 ifeq ($(PE_ENV),CRAY)
-    ifeq (,$(findstring nid,$(HOST)))
-	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
+	cp in.dat $(HOME)/scratch/
+	cp x2p $(HOME)/scratch/
+	cp x2p.pbs $(HOME)/scratch/
+	cp ping_pong $(HOME)/scratch/
+	cp pp.pbs $(HOME)/scratch/
+endif
+
+debug: deploy
+ifeq ($(PE_ENV),CRAY)
+    ifeq (,$(findstring nid,$(HOST))) # if not in a node
+        #interactive qsub (aka CCM) is not for computing!!!
+	# it is, however, appropriate for small debug jobs.
+    	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
     else
-	#cd $(HOME)/scratch
-	aprun -n 64 $(HOME)/scratch/./x2p
+	#aprun -n 64 $(HOME)/scratch/./x2p # 4*16 = 64
+    endif
+else
+	mpiexec -n 8 ./x2p # you're on your own
+endif
+
+runx2p: deploy
+ifeq ($(PE_ENV),CRAY)
+	# Assume we are computing.
+	qsub $(HOME)/scratch/x2p.pbs # proper for computing, even in CCM!
+    ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
+	# do special graphing stuff
     endif
 else
 	mpiexec -n 8 ./x2p
 endif
 
-clean:
-	rm -rf $(OBJS) x2p ping_pong x.x *.mod bin/*
-deploy: x2p
+runPing: deploy
 ifeq ($(PE_ENV),CRAY)
-	cp x2p $(HOME)/scratch/
-	cp in.dat $(HOME)/scratch/
+	# Assume we are computing.
+	qsub $(HOME)/scratch/ping_pong.pbs # proper for computing, even in CCM!
+    ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
+	# do special graphing stuff
+    endif
+else
+	mpiexec -n 8 ./ping_pong
 endif
