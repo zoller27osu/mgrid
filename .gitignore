@@ -3,3 +3,7 @@ x2p
 *.mod
 *.swp
 *~
+scratch/
+bin/
+profile*
+*.out
