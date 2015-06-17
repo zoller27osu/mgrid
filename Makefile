@@ -1,7 +1,7 @@
 # Variables implicitly used by GNU Make to autocreate targets.
 # Conditionally use different parameters if running on cray compiler.
 
-#HOST=$(shell hostname)
+HOST=$(shell hostname)
 
 ifeq ($(PE_ENV),CRAY)
         FC = ftn
@@ -16,11 +16,11 @@ ifeq ($(PE_ENV),CRAY)
 	#-dX: 10,000-variable-module initialize-before-main thing
         LDFLAGS = $(FLAGS) -dynamic #second half of mcmodel=medium equivalent
 else # normal MPI, as on workstations
-	ifeq ($(USER),oychang)
+        ifeq ($(USER),oychang)
 		FC = mpif77.mpich2
-	else
+        else
 		FC = mpif77
-	endif
+        endif
         FFLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 \
 		-DDEBUG_OUT #-fbacktrace #-Wall -Og
         LDFLAGS = -O3 -mcmodel=medium
@@ -40,9 +40,22 @@ x2p.o: x2p.F comm_mpi.o
 
 .PHONY: clean deploy run
 run: x2p
+ifeq ($(PE_ENV),CRAY)
+    ifeq (,$(findstring nid,$(HOST)))
+	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
+    else
+	#cd $(HOME)/scratch
+	aprun -n 64 $(HOME)/scratch/./x2p
+    endif
+else
 	mpiexec -n 8 ./x2p
+endif
+
 clean:
 	rm -f $(OBJS) x2p x.x *.mod bin/*
+
 deploy: x2p
+ifeq ($(PE_ENV),CRAY)
 	cp x2p $(HOME)/scratch/
 	cp in.dat $(HOME)/scratch/
+endif
