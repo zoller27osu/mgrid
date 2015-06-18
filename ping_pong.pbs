@@ -13,3 +13,5 @@
 cd $HOME/scratch
 
 aprun -n 512 ./ping_pong > pingout.$PBS_JOBID
+#grep partner pingout.$PBS_JOBID > ping.out
+printf '%s\n\n' "$(tail -n +6 pingout.$PBS_JOBID)" > bw_ping.out

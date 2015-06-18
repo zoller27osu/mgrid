@@ -1,3 +1,16 @@
+c*
+c* Translated from C by Michael Zoller, 2015.
+c* Original copyright information follows:
+c***********************************************************************
+c* Copyright (C) 2002-2012 the Network-Based Computing Laboratory
+c* (NBCL), The Ohio State University.
+c*
+c* Contact: Dr. D. K. Panda (panda@cse.ohio-state.edu)
+c*
+c* For detailed copyright and licensing information, please refer to the
+c* copyright file COPYRIGHT in the top level OMB directory.
+c*/
+
 !#define mem_realignment
 
 #ifdef mem_realignment
@@ -26,9 +39,6 @@
 #define MULTI_LOOP_LARGE  1000
 #define MULTI_SKIP_SMALL  100
 #define MULTI_LOOP_SMALL  10000
-
-char s_buf_original[MYBUFSIZE]
-char r_buf_original[MYBUFSIZE]
 
 !#ifndef FIELD_WIDTH
 !#  define FIELD_WIDTH 20
@@ -102,6 +112,7 @@ c-----------------------------------------------------------------------
 #ifdef mem_realignment
       align_size = MESSAGE_ALIGNMENT
 c**************Allocating Memory*********************
+      ! TODO: translate to Fortran if possible, else remove
       s_buf =
         (char *) (((unsigned long) s_buf + (align_size - 1)) /
      &    align_size * align_size)
@@ -119,11 +130,11 @@ c**************Memory Allocation Done*********************
         !call fflush(stdout)
       endif
       
-      
       loop = LOOP_SMALL
       skip = SKIP_SMALL
       partner = nid + 1 - 2*MOD(nid,2) ! nid+1 for even, nid-1 for odd
       send_first = (MOD(nid,2).eq.0)
+      
       size = 0
       do !size = 0,MAX_MSG_SIZE !size = (size ? size * 2 : 1)) {
         !* touch the data */
@@ -205,6 +216,7 @@ c-----------------------------------------------------------------------
       avg_lat = 0.0
 
 #ifdef mem_realignment
+      ! TODO: translate to Fortran if possible, else remove
       align_size = getpagesize()
       s_buf =
         (char *) (((unsigned long) s_buf + (align_size - 1)) /

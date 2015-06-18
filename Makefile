@@ -54,7 +54,7 @@ ping_pong.o: ping_pong.F
 .PHONY: clean deploy debug runx2p
 
 clean:
-	rm -rf $(OBJS) $(EXECS) x.x *.mod bin/*
+	rm -rf $(OBJS) $(EXECS) x.x *.mod *.out bin/*
 
 deploy: x2p ping_pong
 ifeq ($(PE_ENV),CRAY)
@@ -85,6 +85,7 @@ ifeq ($(PE_ENV),CRAY)
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
+	$(HOME)/scratch/./ping_graph
 else
 	mpiexec -n 8 ./x2p
 endif
@@ -96,6 +97,12 @@ ifeq ($(PE_ENV),CRAY)
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
+	gnuplot bw_ping_pong.gp
 else
-	mpiexec -n 8 ./ping_pong
+	mpiexec -n 8 ./ping_pong > wks_ping_pong.out
+	# grep partner pingout.$PBS_JOBID > ping.dat
+	# printf '%s\n\n' "$(tail -n +6 wks_ping_pong.out)" > wks_ping.out
+	#tail -n +6 wks_ping_pong.out > wks_ping.out
+	sed '1,5d' wks_ping_pong.out > wks_ping.out
+	gnuplot wks_ping_pong.gp
 endif
