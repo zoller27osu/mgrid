@@ -1,10 +1,14 @@
-TODO
-====
+Compiling (Instrumented) Tau Code
+=================================
 
-- a ping pong test that produces graphs like in http://www.mcs.anl.gov/~fischer/gop/
-- flops calculation makes assumptions about mpi_wtime() resolution
-- setup tau (Done?)
-- check crayftn flags (Done?)
+If things don't compile, make sure the `/sw/xe/tau/<version_num>` is correct with regards to the version in `module show tau`.
+In addition, the `module swap` is to do the same sort of version correctness.
+
+1. module load tau
+2. export TAU_MAKEFILE=/sw/xe/tau/2.21.4/cnl4.1_cray8.1.1/craycnl/lib/Makefile.tau-cray-mpi
+3. module swap darshan darshan/2.3.0
+4. Switch `ftn` to `tau_f90.sh -optCompInst` in Makefile
+5. `make x2p`
 
 
 File Summaries
