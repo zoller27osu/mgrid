@@ -89,9 +89,9 @@ c-----------------------------------------------------------------------
       lev = nlev
       nf  = 2**nlev    ! Global number of points on finest grid in each direction
       n   = nf
-      h   = 1./n                 
+      h   = 1./n
       kf  = 0
-      
+
       call izero     ( tflag,ml)
       call izero     (dmflag,ml)
 
@@ -134,6 +134,7 @@ c     ======== Test Jacobi Alts =========
 #endif
 
 c     ========   Time Xchange  =========
+#ifdef alt_timing
       call gsync
       time0 = dclock()
       !if (nid.eq.1) write(6,*) time0
@@ -170,6 +171,7 @@ c     ========   Time Xchange  =========
       !if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'O') !xchange_3d_old
       if (nid.eq.1) write(6,*) " "
+#endif alt_timing
 
 c     ========    Time Alts    =========
       call gsync
@@ -184,6 +186,7 @@ c     ========    Time Alts    =========
       if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q') !smooth_q
 
+#ifdef alt_timing
       call gsync
       time0 = dclock()
       !if (nid.eq.1) write(6,*) time0
@@ -222,6 +225,7 @@ c     ========    Time Alts    =========
       time1 = dclock()
       !if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
+#endif alt_timing
 
       call gsync
       time0 = dclock()
@@ -284,12 +288,12 @@ c     ========    Time Alts    =========
             ieven = 2-mod(istx,2)
             jeven = 2-mod(isty,2)
             keven = 2-mod(istz,2)
-            
+
             call dmesh(mm,n)  ! find mesh decomposition & msg tags
             call restrict_i (r(kf),rf,mxf,myf,mzf
      &                               ,ieven,jeven,keven,ldim)
         enddo
-    
+
         one = 1.
         iz  = 0
         call smooth_m(u(kf),r(kf),mx,my,mz,h
@@ -317,11 +321,11 @@ c     ========    Time Alts    =========
            ieven = 2-mod(istx,2)
            jeven = 2-mod(isty,2)
            keven = 2-mod(istz,2)
-        
+
            ! prolongate and add
 
            call prolong_a (u(kf),dmax,u(kc),mxc,myc,mzc
-     &                                ,ieven,jeven,keven,ldim) 
+     &                                ,ieven,jeven,keven,ldim)
            call reset_mtags (lev+1)  ! Exchange on prior level processor set
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            !if (nid.eq.6) write(6, *) nid, ": xchanging u(kf)", __LINE__
@@ -347,7 +351,7 @@ c        endif
       enddo
   100 continue
 
-      time1 = dclock()    
+      time1 = dclock()
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'X')
 c     call outmp(u ,ipass,lev,'SOLN',rf,r)
 c     call outmp(ue,ipass,lev,'EXAC',rf,r)
@@ -376,10 +380,10 @@ c-----------------------------------------------------------------------
       n3 = nx*ny
       if (ldim.eq.3) n3=n3*nz
       if (nid.eq.1) then
-        write(6,*) 
+        write(6,*)
      &"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
      &" nz          n3       mp   mq   mr       np          c1"
-        write(6,1) 
+        write(6,1)
      &    ii,dmax,emx,time,ldim,nlev,nx,ny,nz,n3,mp,mq,mr,np,c1
 
     1   format(i7,1p,3e12.4,i2,i3,3i6,i13,'=n ',3i5,i9,'  max error',a1)
@@ -396,7 +400,7 @@ c-----------------------------------------------------------------------
         write(6,*)
      &"   ii   emx         time        fflops      cflops      pflops ",
      &"     rflops      rrlops               n3           np      c1"
-        write(6,2) 
+        write(6,2)
      &    ii,emx,time,fflops,cflops,pflops,rflops,rrlops,n3,np,c1
 
     2   format(i7,1p,7e12.4,i13,'=n ',i9,'  flops',a1)
@@ -409,7 +413,7 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
       function glmin(a,n)
       real a(1)
-      
+
       tmin = 99.0e20
       do i=1,n
          tmin=min(tmin,a(i))
@@ -505,7 +509,7 @@ c-----------------------------------------------------------------------
 
 c     n_used_m = iglmax(n_used,1)
       if (n_used.le.n_max) return
-      
+
       write(6,*) nid,n_used,n_max,' ERROR checkit: ',s10
       call exitt
 
@@ -526,7 +530,7 @@ c-----------------------------------------------------------------------
       subroutine init_mg(npass,nsmooth,igs,sigma)! Get current mg parameters
       include 'MGRID'
       common /cinit/ icalld
-     
+
       nlev_max = (lpow-1) + log2(np)/ldim
 
       if (nid.eq.0) then
@@ -550,7 +554,7 @@ c-----------------------------------------------------------------------
       call bcast(nsmooth,     4)
       call bcast(igs    ,     4)
       call bcast(sigma  ,wdsize)
-      if (nlev.eq.0) stop
+      if (nlev.eq.0) call exitt()
 
       return
       end
@@ -561,7 +565,7 @@ c     Given np processors, find a decomposition such that
 c     mp*mq*mr = np, with mp,mq,mr, and np integer
 c     not just used for power of 2, but best decomp is for pow2
 
-      if (ldim.eq.3) then 
+      if (ldim.eq.3) then
         rp = np**(1./3.)
         mp = rp*(1.01)
         do ip=mp,1,-1
@@ -590,7 +594,7 @@ c     not just used for power of 2, but best decomp is for pow2
            if (nrem.eq.0) goto 30
         enddo
    30   mp = ip
-  
+
         mq = np/mp
         mr = 1
       endif
@@ -598,7 +602,7 @@ c     not just used for power of 2, but best decomp is for pow2
       return
       end
 c-----------------------------------------------------------------------
-      subroutine get_proc_ijk(ip,iq,ir,nid,mp,mq,mr,i0,ldim) 
+      subroutine get_proc_ijk(ip,iq,ir,nid,mp,mq,mr,i0,ldim)
 c     i0 ==> zero-based index
 c
 c     Gets the (i,j,k) coordinate of the nid
@@ -609,7 +613,7 @@ c
       n1  = nid + (1-i0)    ! i0=0 --> zero-based index
 
       ir = 1 +  (n1-1)/mpq
-      if (ldim.eq.2) ir = 1 
+      if (ldim.eq.2) ir = 1
 
       iq = mod1 (n1,mpq)
       iq = 1 +  (iq-1)/mp
@@ -618,7 +622,7 @@ c
       if (i0.eq.0) ip = ip-1
       if (i0.eq.0) iq = iq-1
       if (i0.eq.0) ir = ir-1
- 
+
       return
       end
 c-----------------------------------------------------------------------
@@ -634,8 +638,8 @@ c-----------------------------------------------------------------------
 c
 c      Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
 c      But neighbor is not adjacent processor
-c 
-      
+c
+
 c      if (nid.eq.1) write(6,*) lev,nlev,ipass,nx,' level'
 
        call find_neighb (jpx,ip,mp,nx, 1) ! Right Neighbor
@@ -677,7 +681,7 @@ c      if (nid.eq.1) write(6,*) lev,nlev,ipass,nx,' level'
        nnid(4,ilev)  = nidd
        nnid(5,ilev)  = nidf
        nnid(6,ilev)  = nidb
-       
+
        ntags(1,ilev) = mtagsr
        ntags(2,ilev) = mtagsl
        ntags(3,ilev) = mtagsu
@@ -715,7 +719,7 @@ c-----------------------------------------------------------------------
       nidd = nnid(4,ilev)
       nidf = nnid(5,ilev)
       nidb = nnid(6,ilev)
-      
+
       mtagsr = ntags(1,ilev)
       mtagsl = ntags(2,ilev)
       mtagsu = ntags(3,ilev)
@@ -774,8 +778,8 @@ c-----------------------------------------------------------------------
       integer gid
 
 c     Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
- 
-      mtags = nid       ! Send 
+
+      mtags = nid       ! Send
       mtagr = gid       ! Receive
       if (mtagr.lt.0) mtags = -1
 
@@ -787,7 +791,7 @@ c-----------------------------------------------------------------------
       integer gid
 c     ===========  Assign global numbering =======
       mpq = mp*mq
-      
+
       gid = MPI_PROC_NULL !-1
       if (0.le.ip.and.ip.lt.mp.and.    ! Inside Box
      &    0.le.iq.and.iq.lt.mq.and.
@@ -805,7 +809,7 @@ c-----------------------------------------------------------------------
       save    lmx
 c
 c     This routine calculates mx,my,mz and their global start indx
-c  
+c
 c     Partitions nx points across mp procs
 c     mx is number of element per proc (0---mx)
 
@@ -813,7 +817,7 @@ c     mx is number of element per proc (0---mx)
       imx = mx
       imy = my
       imz = mz
-#endif      
+#endif
 
       nx   = n ! Total number of active points in x-dir
       ny   = n !                                  y-dir
@@ -1012,14 +1016,14 @@ c-----------------------------------------------------------------------
 
       h2     = h*h
       h2i    = 1./h2
-      
+
 
       do k=1,mz-1
       do j=1,my-1
       do i=1,mx-1
          r(i,j,k)=h2i*(h2*ro(i,j,k)-6*u(i,j,k)
      &       + u(i-1,j,k) + u(i+1,j,k)
-     &       + u(i,j-1,k) + u(i,j+1,k) 
+     &       + u(i,j-1,k) + u(i,j+1,k)
      &       + u(i,j,k-1) + u(i,j,k+1))
       enddo
       enddo
@@ -1089,7 +1093,7 @@ c-----------------------------------------------------------------------
 
             im1=i-1
             ip1=i+1
-              
+
             rc(ic,jc,kc) = .125*rf(i,j,k)
      &      + .0625 * ( rf(im1,j,k)+rf(i,jm1,k)+rf(i,j,km1)
      &                + rf(ip1,j,k)+rf(i,jp1,k)+rf(i,j,kp1) ) ! +8 flops
@@ -1117,7 +1121,7 @@ c-----------------------------------------------------------------------
       return
       end
 c-----------------------------------------------------------------------
-      subroutine prolong_a(uf,dmax,uc,mic,mjc,mkc,ievn,jevn,kevn,ndim) 
+      subroutine prolong_a(uf,dmax,uc,mic,mjc,mkc,ievn,jevn,kevn,ndim)
 
 c     uf = uf + P*uc
 
@@ -1135,7 +1139,7 @@ c-----------------------------------------------------------------------
       subroutine prolong_2da(uf,dmax,uc,mic,mjc,ievn,jevn) ! uf = uf + P*uc
       include 'MGRID'
       real uf(0:mx,0:1),uc(0:mic,0:1)
- 
+
       dmax = 0
 
       j1   = jevn-1
@@ -1157,7 +1161,7 @@ c-----------------------------------------------------------------------
             uf(i1,j2) = uf(i1,j2) + .5*(uc(ic,jc)+uc(icm1,jc))
             uf(i1,j1) = uf(i1,j1) + .25*
      &          (uc(icm1,jcm1)+uc(icm1,jc)+uc(ic,jcm1)+uc(ic,jc))
-   
+
             i1   = i1  +2
             i2   = i2  +2
             ic   = ic  +1
@@ -1192,18 +1196,18 @@ c-----------------------------------------------------------------------
 
         j1   = jevn-1
         j2   = jevn
-        jc   = 1          
+        jc   = 1
         jcm1 = jc-1
         do jfine=1,my,2      ! fine index
 
           i1   = ievn-1
           i2   = ievn
-          ic   = 1       
+          ic   = 1
           icm1 = ic-1
           do ifine=1,mx,2    ! fine index
 
-            ! Corner  !           
-            uf(i2,j2,k2)=uf(i2,j2,k2) + uc(ic,jc,kc)                  
+            ! Corner  !
+            uf(i2,j2,k2)=uf(i2,j2,k2) + uc(ic,jc,kc)
             dcrn_mx = max(dcrn_mx,abs(uc(ic,jc,kc)))
 
             ! Edges   !
@@ -1213,7 +1217,7 @@ c-----------------------------------------------------------------------
 
             ! Faces   !
             uf(i2,j1,k1)=uf(i2,j1,k1) + 0.25* ( uc(ic,jc,kc) +
-     &                  uc(ic,jcm1,kc)+uc(ic,jc,kcm1)+uc(ic,jcm1,kcm1)) 
+     &                  uc(ic,jcm1,kc)+uc(ic,jc,kcm1)+uc(ic,jcm1,kcm1))
             uf(i1,j2,k1) = uf(i1,j2,k1) + 0.25* ( uc(ic,jc,kc) +
      &                  uc(icm1,jc,kc)+uc(ic,jc,kcm1)+uc(icm1,jc,kcm1))
             uf(i1,j1,k2) = uf(i1,j1,k2) + 0.25* ( uc(ic,jc,kc) +
@@ -1223,7 +1227,7 @@ c-----------------------------------------------------------------------
             dctr = .125* ( uc(icm1,jcm1,kcm1) + uc(ic  ,jcm1,kcm1) +
      &                     uc(icm1,jc  ,kcm1) + uc(ic  ,jc  ,kcm1) +
      &                     uc(icm1,jcm1,kc  ) + uc(ic  ,jcm1,kc  ) +
-     &                     uc(icm1,jc  ,kc  ) + uc(ic  ,jc  ,kc  ) )  
+     &                     uc(icm1,jc  ,kc  ) + uc(ic  ,jc  ,kc  ) )
 
             uf(i1,j1,k1) = uf(i1,j1,k1) + dctr
 
@@ -1327,7 +1331,7 @@ c     ======= Calculation is independent of u =======
       subroutine jac3d_helper (ix,iy,iz,u,o,r,h2,sa,jgx) ! Jacobi helper
       !include 'MGRID'
       real, dimension(0:ix,0:iy,0:iz) :: u, r, o
-      
+
       call xchange0(o,jgx) ! tile prev u
 
       do k=1,iz-1
@@ -1523,7 +1527,7 @@ c-----------------------------------------------------------------------
       !type realmat
       !  real, dimension(:,:,:) :: m
       !end type realmat
-      
+
       !type realptr
       !  type(realmat), pointer :: p
       !end type realptr
@@ -1569,7 +1573,7 @@ c-----------------------------------------------------------------------
         enddo
         enddo
         enddo
-        
+
         io = 1 - io
       enddo
       cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
@@ -1661,7 +1665,7 @@ c-----------------------------------------------------------------------
       do p=np-1,0,-1
          call gsync()
          if (p.eq.nid) then
-            open(unit=12,file='x.x') 
+            open(unit=12,file='x.x')
             write(12,*) 'open ',p
             close(12)
          endif
@@ -1918,7 +1922,7 @@ c-----------------------------------------------------------------------
           call exitt
         endif
       endif
- 
+
       return
       end
 c-----------------------------------------------------------------------
@@ -2079,7 +2083,7 @@ c     ======        Wait Up       =======
       !do k = 0,mz                !        |
       !do i = 0,mx                !        +---> x
       !   u(i,my,k)= buff2(l)     !      z/
-      !   l=l+1                   ! unpack onto up face 
+      !   l=l+1                   ! unpack onto up face
       !enddo
       !enddo
 
@@ -2088,8 +2092,8 @@ c     ======       Wait Down      =======
       !l=0                        !        ^ y
       !do k = 0,mz                !        |
       !do i = 0,mx                !        +---> x
-      !   u(i,0,k)= buff1(l)      !      z/ 
-      !   l=l+1                   ! unpack onto down face 
+      !   u(i,0,k)= buff1(l)      !      z/
+      !   l=l+1                   ! unpack onto down face
       !enddo
       !enddo
 
@@ -2107,7 +2111,7 @@ c     ======   Exchange z-faces, no buffers (alignment already matches)   ======
         call csend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)         ! nidf from MGRID
 #else
         !imsg_back  = irecv0(mtagrb,u(0,0,0 ),len)             ! mtags from MGRID
-        !imsg_front = irecv0(mtagrf,u(0,0,mz),len) 
+        !imsg_front = irecv0(mtagrf,u(0,0,mz),len)
         imsg_back  = irecv2(mtagrb,u(0,0,0 ),mgreal,isz,nidb) ! mtags from MGRID
         imsg_front = irecv2(mtagrf,u(0,0,mz),mgreal,isz,nidf)
         !call gsync()                                          ! make sure all are posted
@@ -2124,7 +2128,7 @@ c     ======   Exchange z-faces, no buffers (alignment already matches)   ======
       return
       end
 c-----------------------------------------------------------------------
-      subroutine xchange_3d_old(u,buff1,buff2,buffo) 
+      subroutine xchange_3d_old(u,buff1,buff2,buffo)
 !     Zeros out boundary data !
       include 'MGRID'
 
@@ -2198,7 +2202,7 @@ c     ======   Exchange y-faces  =======
       do k = 0,mz                !        |
       do i = 0,mx                !        +---> x
          u(i,my,k)= buff2(l)     !      z/
-         l=l+1                   ! unpack onto top face 
+         l=l+1                   ! unpack onto top face
       enddo
       enddo
 
@@ -2206,8 +2210,8 @@ c     ======   Exchange y-faces  =======
       l=0                        !        ^ y
       do k = 0,mz                !        |
       do i = 0,mx                !        +---> x
-         u(i,0,k)= buff1(l)      !      z/ 
-         l=l+1                   ! unpack onto bottom face 
+         u(i,0,k)= buff1(l)      !      z/
+         l=l+1                   ! unpack onto bottom face
       enddo
       enddo
 
@@ -2215,7 +2219,7 @@ c     ======    Exchange z-faces, no buffers  =======
 
       len = (mx+1)*(my+1)*wdsize                  ! wdsize from MGRID
       imsg_back  = irecv0(mtagrb,u(0,0,0 ),len)   ! mtags from MGRID
-      imsg_front = irecv0(mtagrf,u(0,0,mz),len) 
+      imsg_front = irecv0(mtagrf,u(0,0,mz),len)
       call gsync()                                ! make sure all are posted
 
       len = (mx+1)*(my+1)*wdsize                  ! wdsize from MGRID
@@ -2269,7 +2273,7 @@ c      do j = 0,my
 c         u(0,j)= buff1(j)           ! unpack inbound left face
 c      enddo
       u(0,0:my) = buff1(0:my)
-      
+
 
 c     ======    Exchange y-faces, no buffers  =======
 
@@ -2317,7 +2321,7 @@ c-----------------------------------------------------------------------
     4 format(i4,i5,'qq mtagsl,.....:',8i5)
     5 format(i4,i5,'qq mtagrl,.....:',8i5)
     6 format(i4,i5,'qq nidl,nidr,..:',8i5)
-    9 format(i4,i5,'qqx',7i4,' :',12i4)    
+    9 format(i4,i5,'qqx',7i4,' :',12i4)
 
       ic = ic+1
 

@@ -1,10 +1,10 @@
 TODO
 ====
 
-- ping pong test
+- a ping pong test that produces graphs like in http://www.mcs.anl.gov/~fischer/gop/
 - flops calculation makes assumptions about mpi_wtime() resolution
-- setup tau
-- check crayftn flags
+- setup tau (Done?)
+- check crayftn flags (Done?)
 
 
 File Summaries
@@ -16,9 +16,10 @@ in.dat # Input data for run(s)
 Makefile
 MGRID # submodule-ish grouping of multigrid variables
 x2p.F # multigrid algorithm
+ping_pong.F # Performs an intra-node, then inter-node ping-pong test
 ```
 
-
+x2p:
 Input
 =====
 

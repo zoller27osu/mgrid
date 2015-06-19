@@ -1,0 +1,6 @@
+# Provides a PBS MOM node (NOT a compute node!) Do not run any
+# computations directly on this node, it is against usage policy!
+# (CCM = Cluster Compatibility Mode, allows GUI based stuff)
+
+qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
+
