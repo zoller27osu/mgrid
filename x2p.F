@@ -550,7 +550,7 @@ c-----------------------------------------------------------------------
       call bcast(nsmooth,     4)
       call bcast(igs    ,     4)
       call bcast(sigma  ,wdsize)
-      if (nlev.eq.0) stop
+      if (nlev.eq.0) call exitt()
 
       return
       end

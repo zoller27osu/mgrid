@@ -62,7 +62,7 @@ ifeq ($(PE_ENV),CRAY)
 	cp x2p $(HOME)/scratch/
 	cp x2p.pbs $(HOME)/scratch/
 	cp ping_pong $(HOME)/scratch/
-	cp pp.pbs $(HOME)/scratch/
+	cp ping_pong.pbs $(HOME)/scratch/
 endif
 
 debug: deploy
@@ -80,12 +80,11 @@ endif
 
 runx2p: deploy
 ifeq ($(PE_ENV),CRAY)
-	# Assume we are computing.
+	# Assume we are computing.	
 	qsub $(HOME)/scratch/x2p.pbs # proper for computing, even in CCM!
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
-	$(HOME)/scratch/./ping_graph
 else
 	mpiexec -n 8 ./x2p
 endif
@@ -94,9 +93,6 @@ runPing: deploy
 ifeq ($(PE_ENV),CRAY)
 	# Assume we are computing.
 	qsub $(HOME)/scratch/ping_pong.pbs # proper for computing, even in CCM!
-    ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
-	# do special graphing stuff
-    endif
 	gnuplot bw_ping_pong.gp
 else
 	mpiexec -n 8 ./ping_pong > wks_ping_pong.out

@@ -1,15 +1,16 @@
 #!/bin/bash
-#PBS -l nodes=16:ppn=32:xe
-#PBS -l walltime=00:10:00
-#PBS -N x2pjob
-#PBS -e $PBS_JOBID.err
-#PBS -o $PBS_JOBID.out
-#PBS -m bea
-#PBS -M username@host
 
-. /opt/modules/default/init/bash
-#module swap PrgEnv-cray PrgEnv-gnu
+#PBS -l nodes=16:ppn=32:xe
+#PBS -l walltime=00:30:00
+#PBS -N x2pjob
+#PBS -e $HOME/scratch/x2p$PBS_JOBID.err
+#PBS -o $HOME/scratch/x2p$PBS_JOBID.out
+#PBS -m ea
+##PBS -M if unspecified, emails job submitter!
 
 cd $HOME/scratch
 
-aprun -n 512 ./x2p > x2pout.$PBS_JOBID
+. /opt/modules/default/init/bash
+##module swap PrgEnv-cray PrgEnv-gnu
+
+aprun -n 512 ./x2p

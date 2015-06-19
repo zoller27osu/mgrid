@@ -1,17 +1,16 @@
 #!/bin/bash
 #PBS -l nodes=16:ppn=32:xe
 #PBS -l walltime=00:10:00
-#PBS -N x2pjob
-#PBS -e $PBS_JOBID.err
+#PBS -N pingpong$PBS_JOBID.out
+#PBS -e pingpong$PBS_JOBID.err
 #PBS -o $PBS_JOBID.out
-#PBS -m bea
-#TODO fill in? PBS -M username@host
+#PBS -m ea
 
 . /opt/modules/default/init/bash
 #module swap PrgEnv-cray PrgEnv-gnu
 
 cd $HOME/scratch
 
-aprun -n 512 ./ping_pong > pingout.$PBS_JOBID
+aprun -n 512 ./ping_pong ##> pingout.$PBS_JOBID
 #grep partner pingout.$PBS_JOBID > ping.out
-printf '%s\n\n' "$(tail -n +6 pingout.$PBS_JOBID)" > bw_ping.out
+printf '%s\n\n' "$(tail -n +6 pingpong$PBS_JOBID.out)" > bw_ping.out

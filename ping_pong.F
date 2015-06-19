@@ -83,7 +83,6 @@ c      endif
       !call multi_lat(nid, np)
 
       call MPI_Finalize(ierr)
-      return !EXIT_SUCCESS
       end program
 
 c-----------------------------------------------------------------------
