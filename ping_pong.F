@@ -9,6 +9,8 @@
 !how many different processes we are aiming to ping
 #define TARGET_NP 2000.0
 
+!#define ALL_SIZES
+
 !#define MAX_MSG_SIZE 100000
 #define MAX_MSG_SIZE (2**20)
 #define LARGE_MSG_SIZE  (8192)
@@ -78,7 +80,7 @@ c      if (nid.eq.MASTER_RANK) then
 c        write(6,*) nid,": step, np=", step, np, __LINE__
 c      endif
       
-      call single_sender(nid, np, MASTER_RANK, step, wdsize)
+      call single_sender(nid, np, MASTER_RANK, step, real(wdsize))
       !if (nid.eq.0) write(6,*) " "
       !call multi_lat(nid, np)
 
@@ -89,7 +91,8 @@ c-----------------------------------------------------------------------
       subroutine single_sender(nid, np, sender, step, wdsize)
       IMPLICIT NONE
       include 'mpif.h'
-      integer :: nid, np, step, sender, wdsize
+      integer :: nid, np, step, sender
+      real :: wdsize
       
       integer :: i, size, skip, loop, partner, ierr
 #ifdef mem_realignment
@@ -130,14 +133,18 @@ c**************Memory Allocation Done*********************
         write(6,*) "Node with id", nid, "is sender."
         write(6,*) "Size (bytes)        Latency (us)"
         write(i_char, '(i8)') np
-        write(6,*) "Legend-label:  P=",adjustl(i_char)
+        write(6,*) "partner label latency(us) P=",adjustl(i_char)
         !call fflush(stdout)
       endif
       
       loop = LOOP_SMALL
       skip = SKIP_SMALL
+#ifdef ALL_SIZES
+      do size = 0,MAX_MSG_SIZE !size = (size ? size * 2 : 1)) {
+#else
       size = 0
-      do !size = 0,MAX_MSG_SIZE !size = (size ? size * 2 : 1)) {
+      do
+#endif
         !* touch the data */
         do i = 1,size
           s_buf(i) = 'a'
@@ -177,7 +184,7 @@ c**************Memory Allocation Done*********************
             latency = (t_end - t_start) * 1e6 / (2.0 * loop)
             
             !fprintf(stdout,"%-*d%*.*f\n",10,size,FIELD_WIDTH,FLOAT_PRECISION,latency)
-            write(6,*) size/wdsize, latency, "partner", partner
+            write(6,*) partner, "partner", size/wdsize, latency
             !call fflush(stdout)
           enddo
         
@@ -197,7 +204,8 @@ c**************Memory Allocation Done*********************
           enddo
         
         endif
-        
+
+#ifndef ALL_SIZES
         if (size.eq.0) then
           size = 1
         else
@@ -205,6 +213,7 @@ c**************Memory Allocation Done*********************
         endif
         
         if (size.gt.MAX_MSG_SIZE) return
+#endif
       enddo
       
       !call MPI_Barrier(MPI_COMM_WORLD, ierr)

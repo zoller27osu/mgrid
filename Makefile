@@ -93,12 +93,12 @@ runPing: deploy
 ifeq ($(PE_ENV),CRAY)
 	# Assume we are computing.
 	qsub $(HOME)/scratch/ping_pong.pbs # proper for computing, even in CCM!
-	gnuplot bw_ping_pong.gp
+	#gnuplot bw_ping_pong.gp
 else
 	mpiexec -n 8 ./ping_pong > wks_ping_pong.out
 	# grep partner pingout.$PBS_JOBID > ping.dat
 	# printf '%s\n\n' "$(tail -n +6 wks_ping_pong.out)" > wks_ping.out
 	#tail -n +6 wks_ping_pong.out > wks_ping.out
-	sed '1,5d' wks_ping_pong.out > wks_ping.out
+	sed '1,5d' wks_ping_pong.out | sort -k1n,1 -k3n > wks_ping.out
 	gnuplot wks_ping_pong.gp
 endif

@@ -13,4 +13,6 @@ cd $HOME/scratch
 
 aprun -n 512 ./ping_pong ##> pingout.$PBS_JOBID
 #grep partner pingout.$PBS_JOBID > ping.out
-printf '%s\n\n' "$(tail -n +6 pingpong$PBS_JOBID.out)" > bw_ping.out
+#printf '%s\n\n' "$(tail -n +6 pingpong$PBS_JOBID.out)" > bw_ping.out
+sed '1,5d' pingpong$PBS_JOBID.out | sort -k1n,1 -k3n > bw_ping.out
+gnuplot bw_ping_pong.gp
