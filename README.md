@@ -1,3 +1,16 @@
+Compiling (Instrumented) Tau Code
+=================================
+
+If things don't compile, make sure the `/sw/xe/tau/<version_num>` is correct with regards to the version in `module show tau`.
+In addition, the `module swap` is to do the same sort of version correctness.
+
+1. module load tau
+2. export TAU_MAKEFILE=/sw/xe/tau/2.21.4/cnl4.1_cray8.1.1/craycnl/lib/Makefile.tau-cray-mpi
+3. module swap darshan darshan/2.3.0
+4. Switch `ftn` to `tau_f90.sh -optCompInst` in Makefile
+5. `make x2p`
+
+
 File Summaries
 ==============
 
@@ -7,9 +20,10 @@ in.dat # Input data for run(s)
 Makefile
 MGRID # submodule-ish grouping of multigrid variables
 x2p.F # multigrid algorithm
+ping_pong.F # Performs an intra-node, then inter-node ping-pong test
 ```
 
-
+x2p:
 Input
 =====
 
@@ -19,7 +33,7 @@ in.dat format
 col# | var     | type            | description
 -----|---------|-----------------|--------------------------------------------
 col1 | nlev    | 4-byte int      | number of multigrid levels
-col2 | nsmooth | 4-byte int      | number of smoothings
+col2 | nsmooth | 4-byte int      | number of smoothings (unused?)
 col3 | igs     | 4-byte int      | {0,1} where 0 is jacobian, 1 is gaussian
 col4 | sigma   | word size float | ...
 
