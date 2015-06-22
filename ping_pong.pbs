@@ -1,18 +1,19 @@
 #!/bin/bash
 #PBS -l nodes=16:ppn=32:xe
-#PBS -l walltime=00:10:00
-#PBS -N pingpong$PBS_JOBID.out
-#PBS -e pingpong$PBS_JOBID.err
-#PBS -o $PBS_JOBID.out
-#PBS -m ea
+#PBS -l walltime=16:00:00
+#PBS -N ping_pong
+#PBS -e $HOME/scratch/pingpong$PBS_JOBID.err
+#PBS -o $HOME/scratch/pingpong$PBS_JOBID.out
+#PBS -m bea
 
 . /opt/modules/default/init/bash
 #module swap PrgEnv-cray PrgEnv-gnu
 
 cd $HOME/scratch
 
-aprun -n 512 ./ping_pong ##> pingout.$PBS_JOBID
-#grep partner pingout.$PBS_JOBID > ping.out
+aprun -n 512 ./ping_pong > bw_ping$PBS_JOBID.out
 #printf '%s\n\n' "$(tail -n +6 pingpong$PBS_JOBID.out)" > bw_ping.out
-sed '1,5d' pingpong$PBS_JOBID.out | sort -k1n,1 -k3n > bw_ping.out
+#sed '1,5d' bw_ping$PBS_JOBID.out | sort -k1,1n -k3n > bw_ping.out
+grep partner bw_ping$PBS_JOBID.out | sort -k1,1n -k3n > bw_ping.out
+#head -n -1 bw_ping$PBS_JOBID.out | tail -n +6 | sort -k1,1n -k3n > bw_ping.out
 gnuplot bw_ping_pong.gp

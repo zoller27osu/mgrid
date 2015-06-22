@@ -5,7 +5,8 @@ HOST=$(shell hostname)
 
 ifeq ($(PE_ENV),CRAY)
         FC = ftn
-	FLAGS = -O3 -s real64 -M 124,1058 -hnocaf -hnopgas_runtime -hmpi1 \
+	#-M 1058
+	FLAGS = -O3 -s default64 -M 124 -hnocaf -hnopgas_runtime -hmpi1 \
 		-hpic #first half of mcmodel=medium equivalent
 		#-hvector3 -hscalar3 \
 		#-hnegmsgs \
@@ -43,11 +44,10 @@ comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
 
 intraer: intraer.F
-	$(FC) $(LDFLAGS) -o $@ $^
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
 
 ping_pong: ping_pong.F
-	$(FC) $(LDFLAGS) -o $@ $^
-ping_pong.o: ping_pong.F
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
 
 ##############################################################################
 
@@ -63,6 +63,7 @@ ifeq ($(PE_ENV),CRAY)
 	cp x2p.pbs $(HOME)/scratch/
 	cp ping_pong $(HOME)/scratch/
 	cp ping_pong.pbs $(HOME)/scratch/
+	cp bw_ping_pong.gp $(HOME)/scratch/
 endif
 
 debug: deploy
@@ -96,9 +97,9 @@ ifeq ($(PE_ENV),CRAY)
 	#gnuplot bw_ping_pong.gp
 else
 	mpiexec -n 8 ./ping_pong > wks_ping_pong.out
-	# grep partner pingout.$PBS_JOBID > ping.dat
 	# printf '%s\n\n' "$(tail -n +6 wks_ping_pong.out)" > wks_ping.out
-	#tail -n +6 wks_ping_pong.out > wks_ping.out
-	sed '1,5d' wks_ping_pong.out | sort -k1n,1 -k3n > wks_ping.out
+	# sed '1,5d' wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
+        #grep partner wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
+	tail -n +6 wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
 	gnuplot wks_ping_pong.gp
 endif

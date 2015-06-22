@@ -9,7 +9,7 @@
 !how many different processes we are aiming to ping
 #define TARGET_NP 2000.0
 
-!#define ALL_SIZES
+#define ALL_SIZES
 
 !#define MAX_MSG_SIZE 100000
 #define MAX_MSG_SIZE (2**20)
@@ -59,12 +59,22 @@ c        endif
 c        stop
 c      endif
 
+c      wdsize = 4
+c      eps = 1.0e-12
+c      one_eps = eps + 1
+c      if (one_eps.ne.(1.0)) then
+c        wdsize = 8
+c      endif
+      
+#ifdef SIZEOF
+      wdsize = SIZEOF(eps)
+#else
+      !if (nid.eq.MASTER_RANK) write(6,*) nid, "SIZEOF not detected!"
       wdsize = 4
-      eps = 1.0e-12
-      one_eps = eps + 1
-      if (one_eps.ne.(1.0)) then
+      if ((KIND(eps).eq.2).OR.(KIND(eps).eq.8)) then
         wdsize = 8
       endif
+#endif
 
       if (nid.eq.MASTER_RANK) then
         write(6,*) nid,": wordsize in bytes =", wdsize
@@ -133,7 +143,7 @@ c**************Memory Allocation Done*********************
         write(6,*) "Node with id", nid, "is sender."
         write(6,*) "Size (bytes)        Latency (us)"
         write(i_char, '(i8)') np
-        write(6,*) "partner label latency(us) P=",adjustl(i_char)
+        write(6,*) "0 P=",adjustl(i_char)," time(us) P=",adjustl(i_char)
         !call fflush(stdout)
       endif
       

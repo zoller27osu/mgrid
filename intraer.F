@@ -70,12 +70,22 @@ c*/
         stop
       endif
 
+c      wdsize = 4
+c      eps = 1.0e-12
+c      one_eps = eps + 1
+c      if (one_eps.ne.(1.0)) then
+c        wdsize = 8
+c      endif
+
+#ifdef SIZEOF
+      wdsize = SIZEOF(eps)
+#else
+      !if (nid.eq.0) write(6,*) nid, "SIZEOF not detected!"
       wdsize = 4
-      eps = 1.0e-12
-      oeps = eps + 1
-      if (oeps.ne.(1.0)) then
+      if ((KIND(eps).eq.2).OR.(KIND(eps).eq.8)) then
         wdsize = 8
       endif
+#endif
 
       if (nid.eq.0) write(6,*) nid,": wordsize in bytes =", wdsize
 
@@ -87,7 +97,7 @@ c*/
       call multi_lat(nid, np)
 
       call MPI_Finalize(ierr)
-      return !EXIT_SUCCESS
+c      return !EXIT_SUCCESS
       end program
 
 c-----------------------------------------------------------------------
