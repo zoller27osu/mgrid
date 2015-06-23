@@ -9,10 +9,14 @@
 !how many different processes we are aiming to ping
 #define TARGET_NP 2000.0
 
-#define ALL_SIZES
+!#define ALL_SIZES
+
+#define BASE 1.189207115
+!#define BASE 1.09050773267
 
 !#define MAX_MSG_SIZE 100000
 #define MAX_MSG_SIZE (2**20)
+!#define MAX_MSG_SIZE (800000)
 #define LARGE_MSG_SIZE  (8192)
 
 #ifdef mem_realignment
@@ -111,6 +115,7 @@ c-----------------------------------------------------------------------
 #ifdef statuses
       integer, dimension(MPI_STATUS_SIZE) :: reqstat
 #endif
+      real :: rsize
       character*1, dimension(MAXBUFSIZE) :: s_buf, r_buf
       double precision :: t_start, t_end, latency
       character(len=8) :: i_char
@@ -152,9 +157,11 @@ c**************Memory Allocation Done*********************
 #ifdef ALL_SIZES
       do size = 0,MAX_MSG_SIZE !size = (size ? size * 2 : 1)) {
 #else
+      rsize = 0
       size = 0
       do
 #endif
+        
         !* touch the data */
         do i = 1,size
           s_buf(i) = 'a'
@@ -216,11 +223,18 @@ c**************Memory Allocation Done*********************
         endif
 
 #ifndef ALL_SIZES
-        if (size.eq.0) then
-          size = 1
+        if (rsize.eq.0) then
+          rsize = 1
         else
-          size = size * 2
+          do
+            rsize = rsize * BASE
+            if (int(rsize).ne.size) exit
+            !if (nint(rsize).ne.size) exit
+          enddo
         endif
+        
+        size = int(rsize)
+        size = nint(rsize)
         
         if (size.gt.MAX_MSG_SIZE) return
 #endif
