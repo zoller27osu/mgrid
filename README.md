@@ -4,11 +4,14 @@ Compiling (Instrumented) Tau Code
 If things don't compile, make sure the `/sw/xe/tau/<version_num>` is correct with regards to the version in `module show tau`.
 In addition, the `module swap` is to do the same sort of version correctness.
 
-1. module load tau
-2. export TAU_MAKEFILE=/sw/xe/tau/2.21.4/cnl4.1_cray8.1.1/craycnl/lib/Makefile.tau-cray-mpi
-3. module swap darshan darshan/2.3.0
+1. `module load tau`
+2. `export TAU_MAKEFILE=/sw/xe/tau/2.21.4/cnl4.1_cray8.1.1/craycnl/lib/Makefile.tau-cray-mpi`
+3. `module swap darshan darshan/2.3.0`
 4. Switch `ftn` to `tau_f90.sh -optCompInst` in Makefile
 5. `make x2p`
+6. ... run ...
+7. `pprof -aspn 14` is a good start
+
 
 
 File Summaries
