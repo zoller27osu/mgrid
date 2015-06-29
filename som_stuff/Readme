@@ -1,0 +1,28 @@
+The following document lists the steps for compiling Nek5000 on Blue Waters (BW)
+
+
+1. Swap to pgi programing  environment, the only compiler for which Nek is wokring on BW
+
+module swap PrgEnv-cray PrgEnv-pgi
+
+
+
+2. Use the makenek file which has been provided for compiling. 
+   
+You also need to change the makenek.inc in ~/nek5_svn/trunk/nek/
+replace the existing makenek.inc with makenek.inc.pgi 
+(and obviouslly change its name to makenek.inc)   
+
+
+
+3. After the above changes have been done you should be able to 
+   compile Nek5000
+
+
+
+  
+
+
+
+
+
