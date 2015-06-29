@@ -7,7 +7,7 @@ bin_nek_tools="$HOME/bin"
 # Shortcuts for certain environments. When non-empty,
 #   overrides "MANUAL SELECTION" below.
 # valid options: "bw",""
-#ENVIRON="bw"
+ENVIRON="bw"
 
 # ======= MANUAL SELECTION =======
 # If your environment is not listed above, please set
@@ -17,7 +17,7 @@ F77="mpif77"
 CC="mpicc"
 
 # Only used if you ask to run MPI.
-MPIEXEC="mpiexed"
+MPIEXEC="mpiexec"
 # ===== END MANUAL SELECTION =====
 
 
@@ -30,18 +30,6 @@ BIGMEM="true"
 #R8=""
 #BIGMEM_FLAG=""
 #P=""
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

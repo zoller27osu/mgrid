@@ -11,8 +11,18 @@
 
 !#define ALL_SIZES
 
-#define BASE 1.189207115
+! 1 hr
+!#define BASE 1.41421356237
+! 2 hr
+!#define BASE 1.189207115
+! 4 hr
 !#define BASE 1.09050773267
+! 8 hr
+!#define BASE 1.04427378243
+! 16 hr
+!#define BASE 1.02189714865
+! "32 hr"
+#define BASE 1.01088928605
 
 !#define MAX_MSG_SIZE 100000
 #define MAX_MSG_SIZE (2**20)

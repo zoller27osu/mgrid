@@ -11,7 +11,7 @@ fi
 if [ -z "${R8}" ] || (BIGMEM && [ -z "${BIGMEM_FLAG+set}" ]); then
   case $F77 in
     *ftn*)
-      R8="-s real64"
+      R8="-sreal64"
       BIGMEM_FLAG="-hpic -dynamic"
       ;;
     *)
