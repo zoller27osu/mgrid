@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# binary path
+mkdir -p $HOME/bin
+bin_nek_tools="$HOME/bin"
+
+# Shortcuts for certain environments. When non-empty,
+#   overrides "MANUAL SELECTION" below.
+# valid options: "bw",""
+#ENVIRON="bw"
+
+# ======= MANUAL SELECTION =======
+# If your environment is not listed above, please set
+#   these to your highest level compilers.
+# (MPI compilers if you need MPI, normal compilers if you don't):
+F77="mpif77"
+CC="mpicc"
+
+# Only used if you ask to run MPI.
+MPIEXEC="mpiexed"
+# ===== END MANUAL SELECTION =====
+
+
+# enable BIG MEMORY support
+BIGMEM="true"
+
+
+# ----- UNDETECTED COMPILERS -----
+# Uncomment and add flags to the following only if directed:
+#R8=""
+#BIGMEM_FLAG=""
+#P=""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### don't touch this section ###############################
+
+case $ENVIRON in
+  *bw*)
+    F77="ftn"
+    CC="cc"
+    #MPIF77="$F77"
+    #MPICC="$CC"
+    MPIEXEC="aprun"
+    ;;
+  *)
+    #MPIF77=${MPIF77:-"mpif77"}
+    #MPICC=${MPICC:-"mpicc"}
+    MPIEXEC=${MPIEXEC:-"mpiexec"}
+    ;;
+esac
+
+echo "config: MPIEXEC=$MPIEXEC"
+
+#export F77
+#export CC
+
+#export MPIF77
+#export MPICC
+#export MPIEXEC

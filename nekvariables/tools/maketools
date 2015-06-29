@@ -1,0 +1,57 @@
+#!/bin/bash
+
+### edit config, not this!!! ###############################
+
+if [ $# -eq 0 ]; then
+   echo "Usage: maketools [clean|all|tool(s)]"
+   exit 1
+fi
+
+source scripts/nekvariables/R8_BIGMEM
+
+# overwrite source path with optional 2nd argument
+if [ $# -eq 2 ]; then
+  echo "Overwriting source path with: $2"
+  bin_nek_tools="$2"
+fi
+
+if [ ! -d $bin_nek_tools  ]; then
+  echo "FATAL ERROR: install path $bin_nek_tools does not exist!"
+  exit 1
+fi
+
+# Check if the compiler adds an underscore to external functions
+cat > test_underscore.f << _ACEOF
+      subroutine underscore_test
+        call byte_write
+      end
+_ACEOF
+
+$F77 -c test_underscore.f 2>&1 >/dev/null 
+nm test_underscore.o | grep byte_write_ 1>/dev/null
+if [ $? -eq 0 ]; then 
+  US="-DUNDERSCORE"
+fi
+\rm test_underscore.* 2>/dev/null
+
+export F77
+export CC
+export bin_nek_tools
+export US
+export R8
+
+LIST=`ls -Cd */ | sed 's:\/::g'`
+MODULES=`echo $LIST`
+export MODULES
+
+if [ "$1" == "clean" ]; then
+  make clean
+else
+  if [ "$1" != "all" ]; then
+     LIST=`echo $* | sed 's:\/::g'`
+     MODULES=$LIST
+  fi
+  export MODULES
+  make 
+fi
+
