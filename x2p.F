@@ -20,14 +20,16 @@ c-----------------------------------------------------------------------
 #define JAC3D_JGX 0
 !#define enable_FBtype
 
-#define verify_xchange
-#define verify_jacobi_alts
+!#define verify_xchange
+!#define verify_jacobi_alts
 #define allow_math_differences
+
+!#define alt_timing !When on and the "verify"s are off, should act exactly like the original.
 
 !#define conservative_mpi_dtype_recreate
 
 #define NPASS_DEFAULT 100
-#define NSMOOTH_DEFAULT 21
+#define NSMOOTH_DEFAULT 3
 #define IGS_DEFAULT 2
 #define SIGMA_DEFAULT 0.66666666666666667
 
@@ -112,7 +114,7 @@ c-----------------------------------------------------------------------
       tol   = 1.e-10
 
       lev = nlev
-      nf  = 2**lev
+      nf  = 2**nlev
       n   = nf
       h   = 1./n
       kf  = 0
@@ -171,7 +173,7 @@ c     ========   Time Xchange  =========
       !if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'O') !xchange_3d_old
       if (nid.eq.1) write(6,*) " "
-#endif alt_timing
+#endif
 
 c     ========    Time Alts    =========
       call gsync
@@ -186,7 +188,7 @@ c     ========    Time Alts    =========
       if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q') !smooth_q
 
-#ifdef alt_timing
+#ifdef alt_timing      
       call gsync
       time0 = dclock()
       !if (nid.eq.1) write(6,*) time0
@@ -198,7 +200,7 @@ c     ========    Time Alts    =========
       call gsync
       time1 = dclock()
       !if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A') !jac3alt
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
 
       call gsync
       time0 = dclock()
@@ -212,7 +214,7 @@ c     ========    Time Alts    =========
       time1 = dclock()
       !if (nid.eq.1) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'C') !jac3cnd
-
+      
       call gsync
       time0 = dclock()
       !if (nid.eq.1) write(6,*) time0
@@ -224,8 +226,8 @@ c     ========    Time Alts    =========
       call gsync
       time1 = dclock()
       !if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
-#endif alt_timing
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A') !jac3alt
+#endif
 
       call gsync
       time0 = dclock()
@@ -245,7 +247,7 @@ c     ========    Time Alts    =========
       do ipass=1,NPASS_DEFAULT/5 ! Weird NaN stuff in rf happens when this number gets too high!
 
         lev = nlev
-        nf  = 2**lev
+        nf  = 2**nlev
         n   = nf
         h   = 1./n
         kf  = 0
@@ -1276,11 +1278,11 @@ c-----------------------------------------------------------------------
         elseif (igs.eq.1) then
           call smooth_m_gs_3d(u,r,mx,my,mz,h,sigma,m,iz)
         elseif (igs.eq.2) then
-          call smooth_m_jac3alt(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (igs.eq.4) then
-          call smooth_m_jac3cnd(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (igs.eq.3) then
           call smooth_m_jac3flg(u,r,mx,my,mz,h,sigma,m,uo,iz)
+        elseif (igs.eq.3) then
+          call smooth_m_jac3cnd(u,r,mx,my,mz,h,sigma,m,uo,iz)
+        elseif (igs.eq.4) then
+          call smooth_m_jac3alt(u,r,mx,my,mz,h,sigma,m,uo,iz)
         elseif (igs.eq.5) then
           call smooth_m_jac3idx(u,r,mx,my,mz,h,sigma,m,uo,iz)
        ! elseif (igs.eq.6) then
@@ -1404,47 +1406,6 @@ c     ======= In this original version, u never contains any boundary data! ====
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3alt (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
-      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
-
-      common /ccflops/ cflops,pflops,rflops,rrlops
-
-      h2       = h*h
-      sa       = sigma/6
-
-      if (izero.eq.0) then
-        do k=1,iz-1
-        do j=1,iy-1
-        do i=1,ix-1
-          u(i,j,k)=sa*h2*r(i,j,k)
-        enddo
-        enddo
-        enddo
-        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
-      endif
-
-      !iters = 0
-      i_end = (m+izero-2+1)/2+1
-      do i_sweep = 2,i_end
-        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
-        !iters = iters+2
-      enddo
-
-      if (MOD(m+izero-2+1,2).ne.0) then
-        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        mm1 = (ix+1)*(iy+1)*(iz+1)
-        call copy (u,o,mm1)                     ! u needs newest "u", which is in o
-        !iters = iters+1
-      endif
-
-      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
-
-      !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
-
-      return
-      end
-c-----------------------------------------------------------------------
       subroutine smooth_m_jac3flg (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
       real, dimension(0:ix,0:iy,0:iz) :: u, r, o
       LOGICAL :: f
@@ -1516,6 +1477,47 @@ c-----------------------------------------------------------------------
         mm1 = (ix+1)*(iy+1)*(iz+1)
         call copy (u,o,mm1) ! o was updated last
       endif
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine smooth_m_jac3alt (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
+
+      common /ccflops/ cflops,pflops,rflops,rrlops
+
+      h2       = h*h
+      sa       = sigma/6
+
+      if (izero.eq.0) then
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
+          u(i,j,k)=sa*h2*r(i,j,k)
+        enddo
+        enddo
+        enddo
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
+      endif
+
+      !iters = 0
+      i_end = (m+izero-2+1)/2+1
+      do i_sweep = 2,i_end
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
+        !iters = iters+2
+      enddo
+
+      if (MOD(m+izero-2+1,2).ne.0) then
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        mm1 = (ix+1)*(iy+1)*(iz+1)
+        call copy (u,o,mm1)                     ! u needs newest "u", which is in o
+        !iters = iters+1
+      endif
+
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
+
+      !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
 
       return
       end

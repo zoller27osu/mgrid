@@ -1,10 +1,11 @@
 # Variables implicitly used by GNU Make to autocreate targets.
 # Conditionally use different parameters if running on cray compiler.
-
 HOST=$(shell hostname)
 
+@FC = none
 ifeq ($(PE_ENV),CRAY)
-        FC = ftn
+	#@echo "Using CRAY."
+	FC = ftn
 	#-M 1058
 	FLAGS = -O3 -s default64 -M 124 -hnocaf -hnopgas_runtime -hmpi1 \
 		-hpic #first half of mcmodel=medium equivalent
@@ -13,27 +14,45 @@ ifeq ($(PE_ENV),CRAY)
 		#-fbacktrace \
 		#-hdevelop -eD \
 		#-Wall -Og #-eI
-        FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
+	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
 	#-dX: 10,000-variable-module initialize-before-main thing
-        LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
+	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
+else ifeq ($(PE_ENV),PGI)
+	#@echo "Using PGI."
+	FC = ftn
+	# TODO: check against nek5000 compilation flags
+	#-M 1058
+	FLAGS = -O3 -s default64 -M 124 -hnocaf -hnopgas_runtime -hmpi1 \
+		-hpic #first half of mcmodel=medium equivalent
+		#-hvector3 -hscalar3 \
+		#-hnegmsgs \
+		#-fbacktrace \
+		#-hdevelop -eD \
+		#-Wall -Og #-eI
+	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
+	-Dname alt_timing
+	#-hkeepfiles #-S
+	#-dX: 10,000-variable-module initialize-before-main thing
+	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else # normal MPI, as on workstations
-        ifeq ($(USER),oychang)
+	#@echo "Using Workstation compiler."
+	ifeq ($(USER),oychang)
 		FC = mpif77.mpich2
-        else
+	else
 		FC = mpif77
-        endif
-        FFLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 \
-		-DDEBUG_OUT #-fbacktrace #-Wall -Og
-        LDFLAGS = -O3 -mcmodel=medium
+	endif
+	FFLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 \
+		-DDEBUG_OUT -Xpreprocessor alt_timing #-fbacktrace #-Wall -Og
+	LDFLAGS = -O3 -mcmodel=medium
 endif
+
+##############################################################################
 
 X2P_OBJS = comm_mpi.o x2p.o
 PP_OBJS = ping_pong.o
 OBJS = $(X2P_OBJS) $(PP_OBJS)
 
 EXECS = x2p intraer ping_pong
-
-##############################################################################
 
 all: $(EXECS)
 
@@ -51,7 +70,19 @@ ping_pong: ping_pong.F
 
 ##############################################################################
 
-.PHONY: clean deploy debug runx2p
+.PHONY: clean deploy debug runx2p cray pgi
+
+cray:
+	-module swap PrgEnv-pgi PrgEnv-cray
+	make clean
+	@echo ""
+	@echo "Swap complete. Run make as normal from now on."
+
+pgi:
+	-module swap PrgEnv-cray PrgEnv-pgi
+	make clean
+	@echo ""
+	@echo "Swap complete. Run make as normal from now on."
 
 clean:
 	rm -rf $(OBJS) $(EXECS) x.x *.mod *.out bin/*
@@ -69,7 +100,7 @@ endif
 debug: deploy
 ifeq ($(PE_ENV),CRAY)
     ifeq (,$(findstring nid,$(HOST))) # if not in a node
-        #interactive qsub (aka CCM) is not for computing!!!
+	#interactive qsub (aka CCM) is not for computing!!!
 	# it is, however, appropriate for small debug jobs.
     	qsub -I -l gres=ccm -l nodes=4:ppn=16:xk -l walltime=01:00:00
     else
@@ -99,7 +130,7 @@ else
 	mpiexec -n 8 ./ping_pong > wks_ping_pong.out
 	# printf '%s\n\n' "$(tail -n +6 wks_ping_pong.out)" > wks_ping.out
 	# sed '1,5d' wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
-        #grep partner wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
+	#grep partner wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
 	tail -n +6 wks_ping_pong.out | sort -k1,1n -k3n > wks_ping.out
 	gnuplot wks_ping_pong.gp
 endif
