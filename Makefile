@@ -7,23 +7,7 @@ ifeq ($(PE_ENV),CRAY)
 	#@echo "Using CRAY."
 	FC = ftn
 	#-M 1058
-	FLAGS = -O3 -s default64 -M 124 -hnocaf -hnopgas_runtime -hmpi1 \
-		-hpic #first half of mcmodel=medium equivalent
-		#-hvector3 -hscalar3 \
-		#-hnegmsgs \
-		#-fbacktrace \
-		#-hdevelop -eD \
-		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin -D alt_timing 
-		#-hkeepfiles #-S
-	#-dX: 10,000-variable-module initialize-before-main thing
-	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
-else ifeq ($(PE_ENV),PGI)
-	#@echo "Using PGI."
-	FC = ftn
-	# TODO: check against nek5000 compilation flags
-	#-M 1058
-	FLAGS = -O3 -s default64 -M 124 -hnocaf -hnopgas_runtime -hmpi1 \
+	FLAGS = -M 124 -O3 -s default64 -hnocaf -hnopgas_runtime -hmpi1 \
 		-hpic #first half of mcmodel=medium equivalent
 		#-hvector3 -hscalar3 \
 		#-hnegmsgs \
@@ -31,10 +15,27 @@ else ifeq ($(PE_ENV),PGI)
 		#-hdevelop -eD \
 		#-Wall -Og #-eI
 	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
-	-Dname alt_timing
-		#-hkeepfiles #-S
-		#-dX: 10,000-variable-module initialize-before-main thing
+	  -D alt_timing #-hkeepfiles #-S
+	  #-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
+else ifeq ($(PE_ENV),PGI)
+	#@echo "Using PGI."
+	FC = ftn
+	# TODO: check against nek5000 compilation flags
+	#-M 1058
+	FLAGS = -M 124 -O3 -i8 -r8 -m64 -mcmodel=medium -default64 -Mdalign \
+	  -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
+	  -hnocaf -hnopgas_runtime -hmpi1
+		#-hvector3 -hscalar3 \
+		#-hnegmsgs \
+		#-fbacktrace \
+		#-hdevelop -eD \
+		#-Wall -Og #-eI
+	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
+	  -Dname alt_timing
+	#-hkeepfiles #-S
+	#-dX: 10,000-variable-module initialize-before-main thing
+	LDFLAGS =
 else # normal MPI, as on workstations
 	#@echo "Using Workstation compiler."
 	ifeq ($(USER),oychang)
