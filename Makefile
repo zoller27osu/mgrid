@@ -14,7 +14,8 @@ ifeq ($(PE_ENV),CRAY)
 		#-fbacktrace \
 		#-hdevelop -eD \
 		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin #-hkeepfiles #-S
+	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin -D alt_timing 
+		#-hkeepfiles #-S
 	#-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else ifeq ($(PE_ENV),PGI)
@@ -31,8 +32,8 @@ else ifeq ($(PE_ENV),PGI)
 		#-Wall -Og #-eI
 	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
 	-Dname alt_timing
-	#-hkeepfiles #-S
-	#-dX: 10,000-variable-module initialize-before-main thing
+		#-hkeepfiles #-S
+		#-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else # normal MPI, as on workstations
 	#@echo "Using Workstation compiler."
