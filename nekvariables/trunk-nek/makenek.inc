@@ -157,7 +157,16 @@ fi
 
 ### P definition code removed to the following script:
 if [ -z "${P}" ]; then
+	if [ -z "${R8}" ]; then
+        	BIGMEM_BACKUP=$BIGMEM
+        	BIGMEM=""
+        	source $SOURCE_ROOT/../tools/scripts/nekvariables/R8_BIGMEM
+        	BIGMEM=$BIGMEM_BACKUP
+	fi
 	source $SOURCE_ROOT/../tools/scripts/nekvariables/P_PPPO
+	#echo "$P"
+	P="$R8 $P"
+	#echo "$P"
 fi
 export PPPO
 

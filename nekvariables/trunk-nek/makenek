@@ -73,13 +73,21 @@ PLUGIN_LIST=""
 # DONT'T TOUCH WHAT FOLLOWS !!!
 ###############################################################################
 #source $SOURCE_ROOT/../tools/nekconfig
+source $SOURCE_ROOT/../tools/scripts/nekvariables/checkedConfig
 if [ ! "$IFMPI" == "false" ] && [ ! "$IFMPI" == "no" ]; then
-  source $SOURCE_ROOT/../tools/scripts/nekvariables/checkedConfig
   F77="$MPIF77"
   CC="$MPICC"
 fi
 #echo "$F77"
 #source $SOURCE_ROOT/../tools/scripts/nekvariables/P_PPPO
+
+# now happens in makenek.inc
+#BIGMEM_BACKUP=$BIGMEM
+#BIGMEM="false"
+#source $SOURCE_ROOT/../tools/scripts/nekvariables/R8_BIGMEM
+#F77="$F77 $R8"
+#BIGMEM=$BIGMEM_BACKUP
+
 
 # assign version tag
 mver=1

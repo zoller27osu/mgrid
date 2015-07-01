@@ -1,9 +1,13 @@
 #!/bin/bash
 
+if [ -z "${F77}" ]; then
   source ${BASH_SOURCE%/*}/checkedConfig
+fi
 
-if [ -z "${P+set}" ] && [ "$F77" != "ftn" ]; then
-  source ${BASH_SOURCE%/*}/detectF77compiler
+if [ -z "${P+set}" ]; then
+  if [ -z "${F77comp}" ]; then
+    source ${BASH_SOURCE%/*}/detectF77compiler
+  fi
 
   # assign F77 compiler specific flags
   case $F77comp in
