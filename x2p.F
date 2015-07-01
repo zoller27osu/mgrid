@@ -83,7 +83,7 @@ c-----------------------------------------------------------------------
 
       call init_mg(npass,nsmooth,igs,sigma)       ! Get current mg parameters
 
-      if (nlev.le.nlev_last) return
+      if (nlev.le.nlev_last) return !only tests that are strictly increasing in nlev will be run!
       nlev_last = nlev
 
       call reset_flops ! Reset flop counters

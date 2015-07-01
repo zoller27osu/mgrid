@@ -21,7 +21,7 @@ ifeq ($(PE_ENV),CRAY)
 else ifeq ($(PE_ENV),PGI)
 	#@echo "Using PGI."
 	FC = ftn
-	# TODO: check against nek5000 compilation flags
+	# TODO: check the -h flags as well as -fbacktrace
 	#-M 1058
 	FLAGS = -M 124 -O3 -i8 -r8 -m64 -mcmodel=medium -default64 -Mdalign \
 	  -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
@@ -33,8 +33,8 @@ else ifeq ($(PE_ENV),PGI)
 		#-Wall -Og #-eI
 	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
 	  -Dname alt_timing
-	#-hkeepfiles #-S
-	#-dX: 10,000-variable-module initialize-before-main thing
+	  #-hkeepfiles #-S
+	  #-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS =
 else # normal MPI, as on workstations
 	#@echo "Using Workstation compiler."
@@ -43,9 +43,10 @@ else # normal MPI, as on workstations
 	else
 		FC = mpif77
 	endif
-	FFLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 \
-		-DDEBUG_OUT -Xpreprocessor alt_timing #-fbacktrace #-Wall -Og
-	LDFLAGS = -O3 -mcmodel=medium
+	FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 -DDEBUG_OUT
+    #-fbacktrace #-Wall -Og
+	FFLAGS = -D alt_timing
+	LDFLAGS =
 endif
 
 ##############################################################################
