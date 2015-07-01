@@ -5,9 +5,15 @@
 # source path 
 SOURCE_ROOT="$HOME/nek5_svn/trunk/nek"
 
+# Fortran compiler
+#F77="ftn"
+
+# C compiler
+#CC="cc"
+
 # pre-processor symbol list 
 # (set PPLIST=? to get a list of available symbols)
-#PPLIST="?" 
+#PPLIST="NO_LAPACK" 
 
 # plug-in list
 PLUGIN_LIST=""

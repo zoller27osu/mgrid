@@ -61,11 +61,17 @@ BIGMEM="true"
 
 case $ENVIRON in
   *bw*)
-    F77="ftn"
-    CC="cc"
-    #MPIF77="$F77"
-    #MPICC="$CC"
+    #if [ "$PE_ENV" == "CRAY" ]; then
+      #module swap PrgEnv-cray PrgEnv-pgi
+    #fi 
+    #F77="ftn"
+    #CC="cc"
+    F77="gfortran" #"ftn -g77libs"
+    CC="gcc"
+    MPIF77="ftn"
+    MPICC="cc"
     MPIEXEC="aprun"
+    PPLIST="$PPLIST NO_LAPACK"
     ;;
   *)
     #MPIF77=${MPIF77:-"mpif77"}
