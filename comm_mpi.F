@@ -460,8 +460,13 @@ c-----------------------------------------------------------------------
      &    !     ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4,i4)
           !endif
 
+#ifdef ISNAN
           if ((a(i,j,k).ne.b(i,j,k)).OR.ISNAN(a(i,j,k))
      &                              .OR.ISNAN(b(i,j,k))) then
+#else ifdef IEEE_IS_NAN
+          if ((a(i,j,k).ne.b(i,j,k)).OR.IEEE_IS_NAN(a(i,j,k))
+     &                              .OR.IEEE_IS_NAN(b(i,j,k))) then
+#endif
             if (nid.eq.6) then
               write(6,*) "different at",i,j,k
      &                    ,"(",a(i,j,k),"vs",b(i,j,k),")"
