@@ -460,17 +460,17 @@ c-----------------------------------------------------------------------
 
           !if (nid.eq.6) then
           !  write(6,17) nid,mnb,i,mx,j,my,k,mz,nz
-  !17     !  format(i3,": mnb=",i2," i,j,k= "
-     &    !     ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4,i4)
+c   17     !  format(i3,": mnb=",i2," i,j,k= "
+c     &    !     ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4,i4)
           !endif
 
+          if (a(i,j,k).ne.b(i,j,k)
 #ifdef ISNAN
-          if ((a(i,j,k).ne.b(i,j,k)).OR.ISNAN(a(i,j,k))
-     &                              .OR.ISNAN(b(i,j,k))) then
+     &        .OR.ISNAN(a(i,j,k)).OR.ISNAN(b(i,j,k))
 #else ifdef IEEE_IS_NAN
-          if ((a(i,j,k).ne.b(i,j,k)).OR.IEEE_IS_NAN(a(i,j,k))
-     &                              .OR.IEEE_IS_NAN(b(i,j,k))) then
+     &        .OR.IEEE_IS_NAN(a(i,j,k)).OR.IEEE_IS_NAN(b(i,j,k))
 #endif
+     &        ) then
             if (nid.eq.6) then
               write(6,*) "different at",i,j,k
      &                    ,"(",a(i,j,k),"vs",b(i,j,k),")"

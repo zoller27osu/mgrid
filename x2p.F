@@ -69,6 +69,7 @@ c-----------------------------------------------------------------------
       subroutine mgrid_tester(nlev_last)
       USE Comm_Funcs, ONLY: dclock
       include 'MGRID'
+      include 'mpif.h'
 
       double precision :: time0, time1
 
@@ -151,6 +152,9 @@ c     ========   Time Xchange  =========
       if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
 
+!
+      if (nid.eq.OUT_RANK) write(6,*) "MPI_REQ_NULL=",MPI_REQUEST_NULL
+!
       call gsync
       time0 = dclock()
       !if (nid.eq.OUT_RANK) write(6,*) time0
@@ -162,6 +166,9 @@ c     ========   Time Xchange  =========
       time1 = dclock()
       !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
+      DO
+      END DO
+      call exitt()
 
       call gsync
       time0 = dclock()
@@ -1935,8 +1942,9 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
       subroutine xchange_3d_async(u)
       include 'MGRID'
+      include 'mpif.h'
       real u(0:mx,0:my,0:mz)
-      integer reqs(12)
+      integer ireqs(12)
       !do i = 1,12
       !  reqs(i) = MPI_Request_Null
       !enddo
@@ -1950,45 +1958,53 @@ c-----------------------------------------------------------------------
       !      z/
 c     ======   Exchange x-faces   =======
 c     ======    Recv/Send Left    =======
-      reqs(1) = irecv2(mtagrl,u(0,0,0)   ,LRtype,1,nidl)      ! mtags from MGRID
-      reqs(4) = isend1(mtagsl,u(1,0,0)   ,LRtype,1,nidl)      ! nidl from MGRID, null if mtag < 0
+      ireqs(1) = irecv2(mtagrl,u(0,0,0)   ,LRtype,1,nidl)      ! mtags from MGRID
+      ireqs(4) = isend1(mtagsl,u(1,0,0)   ,LRtype,1,nidl)      ! nidl from MGRID, null if mtag < 0
 c     ======    Recv/Send Right   =======
-      reqs(3) = irecv2(mtagrr,u(mx  ,0,0),LRtype,1,nidr)      ! no-op leaving 0's if mtag < 0
-      reqs(2) = isend1(mtagsr,u(mx-1,0,0),LRtype,1,nidr)      ! nidr from MGRID
+      ireqs(3) = irecv2(mtagrr,u(mx  ,0,0),LRtype,1,nidr)      ! no-op leaving 0's if mtag < 0
+      ireqs(2) = isend1(mtagsr,u(mx-1,0,0),LRtype,1,nidr)      ! nidr from MGRID
       !write(6,*) nid, ": LR done"
       !call msgwaitall(reqs,4)
 
 c     ======   Exchange y-faces   =======
 c     ======    Recv/Send Down    =======
-      reqs(5) = irecv2(mtagrd,u(0,0,0)   ,UDtype,1,nidd)      ! mtags from MGRID
-      reqs(8) = isend1(mtagsd,u(0,1,0)   ,UDtype,1,nidd)      ! nidd from MGRID
+      ireqs(5) = irecv2(mtagrd,u(0,0,0)   ,UDtype,1,nidd)      ! mtags from MGRID
+      ireqs(8) = isend1(mtagsd,u(0,1,0)   ,UDtype,1,nidd)      ! nidd from MGRID
 c     ======     Recv/Send Up     =======
-      reqs(7) = irecv2(mtagru,u(0,my  ,0),UDtype,1,nidu)
-      reqs(6) = isend1(mtagsu,u(0,my-1,0),UDtype,1,nidu)      ! nidu from MGRID
+      ireqs(7) = irecv2(mtagru,u(0,my  ,0),UDtype,1,nidu)
+      ireqs(6) = isend1(mtagsu,u(0,my-1,0),UDtype,1,nidu)      ! nidu from MGRID
 
       !call msgwaitall(reqs(5:8),4)
 
 c     ======   Exchange z-faces, no buffers (alignment already matches)   =======
 #ifdef enable_FBtype
 c     ======    Recv/Send Back    =======
-      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,FBtype,1,nidb)   ! mtags from MGRID
-      reqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
+      ireqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,FBtype,1,nidb)   ! mtags from MGRID
+      ireqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
 c     ======    Recv/Send Front   =======
-      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),FBtype,1,nidf)
-      reqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
+      ireqs(11) = irecv2(mtagrf,u(0,0,mz  ),FBtype,1,nidf)
+      ireqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
 #else
       isz = (mx+1)*(my+1)
 c     ======    Recv/Send Back    =======
-      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,mgreal,isz,nidb) ! mtags from MGRID
-      reqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
+      ireqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,mgreal,isz,nidb) ! mtags from MGRID
+      ireqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
 c     ======    Recv/Send Front   =======
-      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),mgreal,isz,nidf)
-      reqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
+      ireqs(11) = irecv2(mtagrf,u(0,0,mz  ),mgreal,isz,nidf)
+      ireqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
 #endif
 
 c     ======       Wait All       =======
       !call msgwaitall(reqs(9:12),4)
-      call msgwaitall(reqs,12)
+      if ((nidl.eq.MPI_PROC_NULL.or.mtagrl.lt.0).and.
+     &   ireqs(1).ne.MPI_REQUEST_NULL) then
+        write(6,*) nid,": nidl=",nidl,"MPI_REQ_NULL=",MPI_REQUEST_NULL,
+     &        "ireqs(1)=",ireqs(1),"mtagrl",mtagrl
+        do
+        enddo
+      endif
+      write(6,*) nid,": ireqs(1)=",ireqs(1),"ireqs(2)=",ireqs(2)
+      call msgwaitall(ireqs,12)
       !do i = 1,12
       !  if (reqs(i).ne.MPI_REQUEST_NULL) call msgwait1(reqs(i))
       !enddo

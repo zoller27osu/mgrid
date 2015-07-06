@@ -14,25 +14,25 @@ ifeq ($(PE_ENV),CRAY)
 		#-fbacktrace \
 		#-hdevelop -eD \
 		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
-	  -D alt_timing #-hkeepfiles #-S
+	FFLAGS = $(FLAGS) -D alt_timing -e chmnF -dX -r d -J bin -Q bin
+	  #-hkeepfiles #-S
 	  #-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else ifeq ($(PE_ENV),PGI)
 	#@echo "Using PGI."
 	FC = ftn
 	# TODO: check the -h flags as well as -fbacktrace
-	#-M 1058
-	FLAGS = -M 124 -O3 -i8 -r8 -m64 -mcmodel=medium -default64 -Mdalign \
+	#-M 1058,124
+        #-default64: instructs compiler wrappers to include 64-bit MPI library
+	FLAGS = -O3 -r8 -m64 -mcmodel=medium -Mdalign \
 	  -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
-	  -hnocaf -hnopgas_runtime -hmpi1
+	  #-hnocaf -hnopgas_runtime -hmpi1
 		#-hvector3 -hscalar3 \
 		#-hnegmsgs \
 		#-fbacktrace \
 		#-hdevelop -eD \
 		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -e chmnF -dX -r d -J bin -Q bin \
-	  -Dname alt_timing
+	FFLAGS = $(FLAGS) -D alt_timing #-e chmnF -dX -r d -J bin -Q bin
 	  #-hkeepfiles #-S
 	  #-dX: 10,000-variable-module initialize-before-main thing
 	LDFLAGS =
@@ -91,7 +91,7 @@ clean:
 	rm -rf $(OBJS) $(EXECS) x.x *.mod *.out bin/*
 
 deploy: x2p ping_pong
-ifeq ($(PE_ENV),CRAY)
+ifneq ($(PE_ENV),)
 	cp in.dat $(HOME)/scratch/
 	cp x2p $(HOME)/scratch/
 	cp x2p.pbs $(HOME)/scratch/
@@ -101,7 +101,7 @@ ifeq ($(PE_ENV),CRAY)
 endif
 
 debug: deploy
-ifeq ($(PE_ENV),CRAY)
+ifneq ($(PE_ENV),)
     ifeq (,$(findstring nid,$(HOST))) # if not in a node
 	#interactive qsub (aka CCM) is not for computing!!!
 	# it is, however, appropriate for small debug jobs.
@@ -114,7 +114,7 @@ else
 endif
 
 runx2p: deploy
-ifeq ($(PE_ENV),CRAY)
+ifneq ($(PE_ENV),)
 	# Assume we are computing.	
 	qsub $(HOME)/scratch/x2p.pbs # proper for computing, even in CCM!
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
@@ -125,7 +125,7 @@ else
 endif
 
 runPing: deploy
-ifeq ($(PE_ENV),CRAY)
+ifneq ($(PE_ENV),)
 	# Assume we are computing.
 	qsub $(HOME)/scratch/ping_pong.pbs # proper for computing, even in CCM!
 	#gnuplot bw_ping_pong.gp
