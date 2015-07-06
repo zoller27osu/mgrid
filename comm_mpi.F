@@ -1,7 +1,7 @@
 !#define catch_mpi_errs
 !#define waitall_statuses
 
-!#define use_tags !if commented, sources will be used
+#define use_tags !if commented, sources will be used
 
 c-----------------------------------------------------------------------
       subroutine init_proc
