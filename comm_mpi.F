@@ -438,6 +438,10 @@ c-----------------------------------------------------------------------
         end function arreq
 c-----------------------------------------------------------------------
         function mateq(a,b,mnb)!mx,my,mz,mnb)
+#ifndef ISNAN
+        USE, INTRINSIC :: IEEE_ARITHMETIC
+        USE, INTRINSIC :: IEEE_FEATURES
+#endif
         include 'MGRID'
         logical :: mateq, ib, jb, kb
         real, dimension(0:mx,0:my,0:mz) :: a,b
