@@ -1,0 +1,20 @@
+Notes:
+1. som_stuff should no longer be necessary. It should be left for backup use in
+    case of the catastrophic failure of the scripts held here.
+2. The scripts here should automatically call "module swap PrgEnv-cray PrgEnv-pgi"
+    for you if you indicate that you are on Blue Waters in step 1 of "How to use".
+
+How to install:
+1. Copy nekvariables to nek5_svn/trunk/tools/scripts/.
+    (i.e. with "cp -rf nekvariables ~/nek5_svn/trunk/tools/scripts/.")
+2. Run nekvariables/install.sh from there to unpack.
+
+How to use:
+1. Edit nek5_svn/trunk/tools/nekconfig with the request information.
+2. Run maketools, makenek as normal.
+3. Make additional changes to nekconfig as requested by the scripts.
+
+nekvariables/copychanges.sh:
+    Will copy changes to the files back to the installed nekvariables
+folder so that it can then be copied back to ~/mgrid and uploaded to the git.
+

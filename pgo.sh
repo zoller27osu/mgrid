@@ -3,13 +3,25 @@
 #rm pgo.gp
 #egrep "pgo|pgn0|pgn1|pgn2" timing.log.$1 > pgo$1.dat
 #touch pgo$1.dat
+if [ -z "${1}" ]; then
+    echo "Usage: $0 number_of_nodes"
+    exit
+fi
+
 if [ ! -f "timing.log.$1" ] || ! grep -lq Done timing.log.$1 #grep -lq "Ctrl-C" timing.log.$1
 then
     echo "'timing.log.$1' not found! Running timing test."
-    nekbmpi timing $1
+    if [ -n "${PE_ENV}" ]; then
+        #printf %0.f\\n 15.4
+        hours=$(echo $1 | awk '{print int((log($1)/log(2))+0.5);}')
+	echo "$0: Calculated time needed: $hours hours."
+        nekq timing $1 $hours
+    else
+        nekbmpi timing $1
+    fi
     until grep -l Done logfile
     do
-        sleep 2
+        sleep 10
     done
 fi
 
