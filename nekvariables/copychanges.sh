@@ -2,6 +2,7 @@ cp ../nekbmpi scripts/.
 cp ../nekpbs scripts/.
 cp ../nekq scripts/.
 
+cp ../../makefile tools/.
 cp ../../maketools tools/.
 cp ../../nekconfig tools/.
 

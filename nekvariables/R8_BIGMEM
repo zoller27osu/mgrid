@@ -18,27 +18,29 @@ if [ -z "${R8}" ] || [ "$BIGMEM" ] && [ -z "${BIGMEM_FLAG+set}" ]; then
     source ${BASH_SOURCE%/*}/detectF77compiler
   fi
 
+  I8="-i8"
+  R8="-r8"
+  BIGMEM_FLAG="-mcmodel=medium"
   case $F77comp in
     *ifort*)
-      R8="-r8"
-      BIGMEM_FLAG="-mcmodel=medium -shared-intel"
-      ;;
+      BIGMEM_FLAG="-mcmodel=medium -shared-intel";;
     *pgf*|*ftn*)
-      R8="-r8"
-      BIGMEM_FLAG="-mcmodel=medium"
       ;;
     *pathf*|*open*)
-      R8="-r8";;
+      ;;
     *gfortran*)
+      I8="-fdefault-integer-8"
       R8="-fdefault-real-8"
-      BIGMEM_FLAG="-mcmodel=medium"
       ;;
     *xlf*)
+      I8="-qintegersize=8"
       R8="-qrealsize=8"
       BIGMEM_FLAG="-q64"
       ;;
     *sunf*)
-      R8="-r8const -xtypemap=real:64";;
+      I8="-i8const -xtypemap=integer:64"
+      R8="-r8const -xtypemap=real:64"
+      ;;
     *)
       echo "ERROR: Unable to detect underlying compiler!"
       echo "Please set the following in config:"
@@ -48,6 +50,9 @@ if [ -z "${R8}" ] || [ "$BIGMEM" ] && [ -z "${BIGMEM_FLAG+set}" ]; then
         echo "    (or the empty string if this occurs by default)."
         echo "    Unset BIGMEM if this is not needed."
       fi
+      #I8=""
+      #R8=""
+      #BIGMEM_FLAG=""
       exit 1
       ;;
   esac
