@@ -166,9 +166,9 @@ c     ========   Time Xchange  =========
       time1 = dclock()
       !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
-      DO
-      END DO
-      call exitt()
+c      DO
+c      ENDDO
+c      call exitt()
 
       call gsync
       time0 = dclock()
@@ -1996,14 +1996,14 @@ c     ======    Recv/Send Front   =======
 
 c     ======       Wait All       =======
       !call msgwaitall(reqs(9:12),4)
-      if ((nidl.eq.MPI_PROC_NULL.or.mtagrl.lt.0).and.
-     &   ireqs(1).ne.MPI_REQUEST_NULL) then
-        write(6,*) nid,": nidl=",nidl,"MPI_REQ_NULL=",MPI_REQUEST_NULL,
-     &        "ireqs(1)=",ireqs(1),"mtagrl",mtagrl
-        do
-        enddo
-      endif
-      write(6,*) nid,": ireqs(1)=",ireqs(1),"ireqs(2)=",ireqs(2)
+c      if ((nidl.eq.MPI_PROC_NULL.or.mtagrl.lt.0).and.
+c     &   ireqs(1).ne.MPI_REQUEST_NULL) then
+c        write(6,*) nid,": nidl=",nidl,"MPI_REQ_NULL=",MPI_REQUEST_NULL,
+c     &        "ireqs(1)=",ireqs(1),"mtagrl",mtagrl
+c        do
+c        enddo
+c      endif
+c      write(6,*) nid,": ireqs(1)=",ireqs(1),"ireqs(2)=",ireqs(2)
       call msgwaitall(ireqs,12)
       !do i = 1,12
       !  if (reqs(i).ne.MPI_REQUEST_NULL) call msgwait1(reqs(i))

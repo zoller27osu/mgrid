@@ -13,4 +13,4 @@ cd $HOME/scratch
 . /opt/modules/default/init/bash
 ##module swap PrgEnv-cray PrgEnv-gnu
 
-aprun -n 8 ./x2p
+aprun -n 32768 ./x2p

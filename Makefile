@@ -24,7 +24,7 @@ else ifeq ($(PE_ENV),PGI)
 	# TODO: check the -h flags as well as -fbacktrace
 	#-M 1058,124
         #-default64: instructs compiler wrappers to include 64-bit MPI library
-	FLAGS = -O3 -r8 -m64 -mcmodel=medium -Mdalign \
+	FLAGS = -O3 -r8 -mcmodel=medium -Mdalign \
 	  -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
 	  #-hnocaf -hnopgas_runtime -hmpi1
 		#-hvector3 -hscalar3 \
