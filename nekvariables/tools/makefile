@@ -10,10 +10,10 @@ all:
         export FFLAGS_IN=" ";               \
         export CFLAGS_IN=${US} ;            \
         if [ "$$i" == "genmap" ]; then      \
-           export FFLAGS_IN=${R8} ${I8} ;   \
+           export FFLAGS_IN=${R8} ;         \
         fi ;                                \
         if [ "$$i" == "genbox" ]; then      \
-           export FFLAGS_IN=${R8} ;         \
+           export FFLAGS_IN="${R8} ${I8} "; \
         fi ;                                \
         if [ "$$i" == "prenek" ]; then      \
            export CFLAGS_IN="$(US) -Dr8";   \
