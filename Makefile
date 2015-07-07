@@ -43,7 +43,7 @@ else # normal MPI, as on workstations
 	else
 		FC = mpif77
 	endif
-	FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 -DDEBUG_OUT
+	FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 #-DDEBUG_OUT
     #-fbacktrace #-Wall -Og
 	FFLAGS = -D alt_timing
 	#FCOMP = $(shell $(FC) -show)
@@ -71,7 +71,6 @@ comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
 
 intraer: intraer.F
-	@echo "F77 $F77"
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
 
 ping_pong: ping_pong.F

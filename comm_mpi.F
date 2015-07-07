@@ -23,12 +23,9 @@ c-----------------------------------------------------------------------
       call MPI_COMM_RANK(MPI_COMM_WORLD, nid, ierr)
 
 #ifdef catch_mpi_errs
-      !if (nid.eq.0) then
-        ! Assignment to junk bypasses bug in older versions of gfortran
-        junk = MPI_COMM_WORLD
-        call MPI_Comm_set_errhandler(junk,MPI_ERRORS_RETURN,ierr)
-      !endif
-      !call gsync
+      ! Assignment to junk bypasses bug in older versions of gfortran
+      junk = MPI_COMM_WORLD
+      call MPI_Comm_set_errhandler(junk,MPI_ERRORS_RETURN,ierr)
 #endif
 
 c     set mpi real type-
@@ -164,6 +161,11 @@ c-----------------------------------------------------------------------
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
+      INTEGER :: ierr
+#ifdef catch_mpi_errs
+      INTEGER :: strlen, temp
+      CHARACTER (LEN=MPI_MAX_ERROR_STRING) :: str
+#endif
 
       integer status(MPI_STATUS_SIZE)
 
@@ -171,6 +173,14 @@ c-----------------------------------------------------------------------
 
 c     write(6,*) nid,' msgwait:',imsg
       call mpi_wait (imsg,status,ierr)
+#ifdef catch_mpi_errs
+      if (ierr.ne.MPI_SUCCESS) then
+        call MPI_Error_string(ierr,str,strlen,temp)
+        write(6,*) nid, ": msgwait ERROR: ", str(1:strlen)
+        !PRINT *, str(1:strlen)
+        call MPI_Abort(MPI_COMM_WORLD,1,temp)
+      endif
+#endif
 
       return
       end
@@ -207,10 +217,19 @@ c-----------------------------------------------------------------------
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
-
+      INTEGER :: ierr
+#ifdef catch_mpi_errs
+      INTEGER :: strlen, temp
+      character str(MPI_MAX_ERROR_STRING)
+#endif
       integer buf(1)
 
       call mpi_bcast (buf,len,mpi_byte,0,MPI_COMM_WORLD,ierr)
+      if (ierr.ne.MPI_SUCCESS) then
+        call MPI_Error_string(ierr,str,strlen,temp)
+        write(6,*) nid, ": bcast ERROR: ", str(1:strlen)
+        call MPI_Abort(MPI_COMM_WORLD,1,temp)
+      endif
 
       return
       end
@@ -280,11 +299,23 @@ c-----------------------------------------------------------------------
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
+      INTEGER :: ierr
+#ifdef catch_mpi_errs
+      INTEGER :: strlen, temp
+      character str(MPI_MAX_ERROR_STRING)
+#endif
       !real*4 buf(1)
 
       if ((msgtag.lt.0).or.(jnid.eq.MPI_PROC_NULL)) return!(jnid.lt.0).or.(jnid.ge.np)) return
 
       call mpi_send(x,num,itype,jnid,msgtag,MPI_COMM_WORLD,ierr)
+#ifdef catch_mpi_errs
+      if (ierr.ne.MPI_SUCCESS) then
+        call MPI_Error_string(ierr,str,strlen,temp)
+        write(6,*) nid, ": csend1 ERROR: ", str(1:strlen)
+        call MPI_Abort(MPI_COMM_WORLD,1,temp)
+      endif
+#endif
 
       return
       end
@@ -308,7 +339,7 @@ c-----------------------------------------------------------------------
 #ifdef catch_mpi_errs
         if (ierr.ne.MPI_SUCCESS) then
           call MPI_Error_string(ierr,str,strlen,temp)
-          write(6,*) nid, ": isend1 ERROR: ", str
+          write(6,*) nid, ": isend1 ERROR: ", str(1:strlen)
           call MPI_Abort(MPI_COMM_WORLD,1,temp)
         endif
 #endif
@@ -321,7 +352,9 @@ c-----------------------------------------------------------------------
       include 'mpif.h'
       common /cmgmpi/ nid,np,mgreal,wdsize
       integer wdsize
+      INTEGER :: ierr
 #ifdef catch_mpi_errs
+      INTEGER :: strlen, temp
       character str(MPI_MAX_ERROR_STRING)
 #endif
 
@@ -334,10 +367,11 @@ c     Note: len in bytes
         call mpi_irecv (x,num,itype,mpi_any_source,msgtag
      &                    ,MPI_COMM_WORLD,irecv1,ierr)
 #ifdef catch_mpi_errs
-        if (ierr.ne.MPI_SUCCESS) then
-          call MPI_Error_string(ierr,str,lenres,ierr)
-          write(6,*) nid, ": irecv1 ERROR: ", str
-        endif
+      if (ierr.ne.MPI_SUCCESS) then
+        call MPI_Error_string(ierr,str,strlen,temp)
+        write(6,*) nid, ": irecv1 ERROR: ", str(1:strlen)
+        call MPI_Abort(MPI_COMM_WORLD,1,temp)
+      endif
 #endif
       endif
 
@@ -355,7 +389,6 @@ c-----------------------------------------------------------------------
       INTEGER :: strlen, temp
       character str(MPI_MAX_ERROR_STRING)
 #endif
-
 
 c     Note: len in bytes
 
@@ -378,7 +411,7 @@ c     ======  mpi_irecv can handle MPI_PROC_NULL just fine!  =======
 #ifdef catch_mpi_errs
       if (ierr.ne.MPI_SUCCESS) then
         call MPI_Error_string(ierr,str,strlen,temp)
-        write(6,*) nid, ": irecv2 ERROR: ", str
+        write(6,*) nid, ": irecv2 ERROR: ", str(1:strlen)
         call MPI_Abort(MPI_COMM_WORLD,1,temp)
       endif
 #endif
@@ -412,13 +445,13 @@ c-----------------------------------------------------------------------
 #ifdef catch_mpi_errs
       if (ierr.ne.MPI_SUCCESS) then
         call MPI_Error_string(ierr,str,strlen,temp)
-        write(6,*) nid, ": msgwaitall ERROR: ", str
+        write(6,*) nid, ": msgwaitall ERROR: ", str(1:strlen)
 #ifdef waitall_statuses
         do i = 1,num
           if (statuses(MPI_ERROR,i).ne.MPI_SUCCESS) then
             write(6,*) nid, ": status(", i, ") error = "
             call MPI_Error_string(statuses(MPI_ERROR,i),str,lenres,ierr)
-            write(6,*) nid, ": ", str
+            write(6,*) nid, ": ", str(1:strlen)
           endif
         enddo
 #endif

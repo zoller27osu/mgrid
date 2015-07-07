@@ -58,6 +58,10 @@ c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       call get_proc_mpqr (mp,mq,mr,np,ldim)             ! processor decomp
       call get_proc_ijk  (ip,iq,ir,nid,mp,mq,mr,0,ldim) ! nid = (ip,iq,ir)
 
+!
+      if (nid.eq.OUT_RANK) write(6,*) "MPI_REQ_NULL=",MPI_REQUEST_NULL
+!
+
       do itest=1,2
         icalld = 0
         do i = 1,90 ! parses up to 90 test lines from in.dat
@@ -156,9 +160,6 @@ c     ========   Time Xchange  =========
       if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
 
-!
-      if (nid.eq.OUT_RANK) write(6,*) "MPI_REQ_NULL=",MPI_REQUEST_NULL
-!
       call gsync
       time0 = dclock()
       !if (nid.eq.OUT_RANK) write(6,*) time0
@@ -921,6 +922,7 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine initu(u,n,h,ndim)  ! Fill grid
+      include 'MGRID'
       real u(1) !Why?
 
       if (ndim.eq.2) call initu_2d(u,n,h)
@@ -2067,7 +2069,6 @@ c      do j = 0,myz1; u(0,j,0)= buff1(j);! unpack inbound left face      enddo
       !write(6,*) nid, ": LR done"
 
 
-
 c     ======   Exchange y-faces   =======
       !mxz = (mx+1)*(mz+1)
 
@@ -2123,8 +2124,6 @@ c     ======       Wait Down      =======
       !   l=l+1                   ! unpack onto down face
       !enddo
       !enddo
-
-
 
 c     ======   Exchange z-faces, no buffers (alignment already matches)   =======
       isz = (mx+1)*(my+1)!*wdsize                       ! wdsize from MGRID
