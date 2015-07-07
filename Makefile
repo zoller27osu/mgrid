@@ -46,6 +46,11 @@ else # normal MPI, as on workstations
 	FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 -DDEBUG_OUT
     #-fbacktrace #-Wall -Og
 	FFLAGS = -D alt_timing
+	#FCOMP = $(shell $(FC) -show)
+  ifeq ($(word 1, $(shell $(FC) -show)),gfortran)
+	FFLAGS += -D gfortran
+  endif
+#endif
 	LDFLAGS =
 endif
 
@@ -66,6 +71,7 @@ comm_mpi.o: comm_mpi.F MGRID
 x2p.o: x2p.F comm_mpi.o
 
 intraer: intraer.F
+	@echo "F77 $F77"
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
 
 ping_pong: ping_pong.F

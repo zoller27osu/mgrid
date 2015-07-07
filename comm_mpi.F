@@ -1,7 +1,13 @@
 #define catch_mpi_errs
 #define waitall_statuses
 
-#define use_tags !if commented, sources will be used
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+c If defined, IEEE_ARITHMETIC will be assumed absent
+c and Gfortran's ISNAN will be used instead of IEEE_IS_NAN.
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!#define gfortran
+
+#define use_tags !if undefined, sources will be used
 
 c-----------------------------------------------------------------------
       subroutine init_proc
@@ -459,9 +465,9 @@ c-----------------------------------------------------------------------
         end function arreq
 c-----------------------------------------------------------------------
         function mateq(a,b,mnb)!mx,my,mz,mnb)
-#ifndef ISNAN
+#ifndef gfortran
         USE, INTRINSIC :: IEEE_ARITHMETIC
-        USE, INTRINSIC :: IEEE_FEATURES
+        !USE, INTRINSIC :: IEEE_FEATURES
 #endif
         include 'MGRID'
         logical :: mateq, ib, jb, kb
@@ -486,9 +492,9 @@ c     &    !     ,i4,"/",i4,", ",i4,"/",i4,", ",i4,"/",i4,i4)
           !endif
 
           if (a(i,j,k).ne.b(i,j,k)
-#ifdef ISNAN
+#ifdef gfortran
      &        .OR.ISNAN(a(i,j,k)).OR.ISNAN(b(i,j,k))
-#else ifdef IEEE_IS_NAN
+#else
      &        .OR.IEEE_IS_NAN(a(i,j,k)).OR.IEEE_IS_NAN(b(i,j,k))
 #endif
      &        ) then

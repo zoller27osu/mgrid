@@ -26,7 +26,11 @@ c-----------------------------------------------------------------------
 !#define verify_jacobi_alts
 #define allow_math_differences
 
-!#define alt_timing !When on and the "verify"s are off, should act exactly like the original.
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+c When defined and the "verify"s are undefined,
+c the program should act exactly like the original.
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!#define alt_timing
 
 !#define conservative_mpi_dtype_recreate
 
