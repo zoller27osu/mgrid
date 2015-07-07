@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -q normal
+#PBS -l nodes=1024:ppn=32:xe
+#PBS -l walltime=15:30:00
+#PBS -N timing
+#PBS -e timing.err
+#PBS -o timing.log.32768
+#PBS -A jrz
+cd /u/sciteam/zoller/nek5_svn/examples/timing
+echo timing > SESSION.NAME
+echo `pwd`'/' >> SESSION.NAME
+rm -f timing.his1
+rm -f timing.sch1
+rm -f timing.log1
+mv timing.log timing.log1
+mv timing.his timing.his1
+mv timing.sch timing.sch1
+rm -f logfile
+rm -f ioinfo
+sleep 5
+aprun -n 32768 ./nek5000
+sleep 5
+ln timing.log.32768 logfile
+exit 0;

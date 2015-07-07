@@ -1,0 +1,6 @@
+mv: cannot stat `timing.log': No such file or directory
+mv: cannot stat `timing.his': No such file or directory
+mv: cannot stat `timing.sch': No such file or directory
+aprun: file ./nek5000 not found
+aprun: Exiting due to errors. Application aborted
+ln: accessing `timing.log.32768': No such file or directory
