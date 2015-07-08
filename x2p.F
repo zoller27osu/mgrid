@@ -398,8 +398,8 @@ c-----------------------------------------------------------------------
       if (ldim.eq.3) n3=n3*nz
       if (nid.eq.OUT_RANK) then
         write(6,*)
-     &"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
-     &" nz          n3       mp   mq   mr       np          c1"
+     &"   ii   dmax        emx         time    ldim  nlev nx    ny    nz&
+     &           n3       mp   mq   mr       np          c1"
         write(6,1)
      &    ii,dmax,emx,time,ldim,nlev,nx,ny,nz,n3,mp,mq,mr,np,c1
 
@@ -415,8 +415,8 @@ c-----------------------------------------------------------------------
 
       if (nid.eq.OUT_RANK) then
         write(6,*)
-     &"   ii   emx         time        fflops      cflops      pflops ",
-     &"     rflops      rrlops               n3           np      c1"
+     &"   ii   emx         time        fflops      cflops      pflops   &
+     &   rflops      rrlops               n3           np      c1"
         write(6,2)
      &    ii,emx,time,fflops,cflops,pflops,rflops,rrlops,n3,np,c1
 

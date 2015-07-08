@@ -37,7 +37,7 @@ export CC
 export bin_nek_tools
 export US
 export R8
-export I8
+#export I8
 
 LIST=`ls -Cd */ | sed 's:\/::g'`
 MODULES=`echo $LIST`
