@@ -12,7 +12,7 @@ output=${3:-png}
 
 if [ ! -f "$1.log.$2" ] || ! grep -lq Done $1.log.$2 #grep -lq "Ctrl-C" $1.log.$2
 then
-    echo "'$1.log.$2' not found! Running $1."
+    echo "'$1.log.$2' not found (or incomplete)! Running $1."
     if [ -n "${PE_ENV}" ]; then
         #printf %0.f\\n 15.4
         hours=$(echo $2 | awk '{print int((log($1)/log(2))+0.5);}')

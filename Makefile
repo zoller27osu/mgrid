@@ -104,6 +104,7 @@ ifneq ($(PE_ENV),)
 	cp ping_pong $(HOME)/scratch/
 	cp ping_pong.pbs $(HOME)/scratch/
 	cp bw_ping_pong.gp $(HOME)/scratch/
+	cp pgo.sh ~/nek5_svn/examples/timing/.
 endif
 
 debug: deploy
