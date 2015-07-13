@@ -11,6 +11,7 @@ echo  "#PBS -l walltime=$hours:30:00"                           >> $1.batch
 echo  "#PBS -N $1"                                              >> $1.batch
 echo  "#PBS -e $1.err"                                          >> $1.batch
 echo  "#PBS -o $1.log.$2"                                       >> $1.batch
+echo  "#PBS -m bea"                                             >> $1.batch
 echo  "#PBS -A jrz"                                             >> $1.batch 
 echo  cd `pwd`                                                  >> $1.batch
 echo  "echo" $1      ">"  SESSION.NAME                          >> $1.batch
