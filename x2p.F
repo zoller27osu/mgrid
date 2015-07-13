@@ -150,20 +150,10 @@ c     ========   Time Xchange  =========
 #ifdef alt_timing
       call gsync
       time0 = dclock()
-      !if (nid.eq.OUT_RANK) write(6,*) time0
-      !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
-      do ipass=1,npass*20
-         call xchange0(u,1)
-      enddo
-      call gsync
-      time1 = dclock()
-      if (nid.eq.OUT_RANK) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
-
-      call gsync
-      time0 = dclock()
-      !if (nid.eq.OUT_RANK) write(6,*) time0
-      !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      endif
       do ipass=1,npass*20
          call xchange0(u,2)
       enddo
@@ -177,8 +167,24 @@ c      call exitt()
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.OUT_RANK) write(6,*) time0
-      !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      endif
+      do ipass=1,npass*20
+         call xchange0(u,1)
+      enddo
+      call gsync
+      time1 = dclock()
+      if (nid.eq.OUT_RANK) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
+
+      call gsync
+      time0 = dclock()
+      if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      endif
       do ipass=1,npass*20
          call xchange0(u,0)
       enddo
@@ -186,6 +192,7 @@ c      call exitt()
       time1 = dclock()
       !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'O') !xchange_3d_old
+      
       if (nid.eq.OUT_RANK) write(6,*) " "
 #endif
 
