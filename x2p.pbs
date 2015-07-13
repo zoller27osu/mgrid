@@ -5,7 +5,7 @@
 #PBS -N x2pjob
 #PBS -e $HOME/scratch/x2p$PBS_JOBID.err
 #PBS -o $HOME/scratch/x2p$PBS_JOBID.out
-#PBS -m ea
+#PBS -m bea
 ##PBS -M if unspecified, emails job submitter!
 
 cd $HOME/scratch
