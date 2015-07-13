@@ -22,7 +22,7 @@ echo "# Written by x2p.sh"						>> $1.gp
 echo "set terminal x11 enhanced font 'Arial,20' persist"		>> $1.gp
 echo "set output '$1.$output'"						>> $1.gp
 echo "set multiplot layout 1,1"						>> $1.gp
-echo ""									>> $1.gp
+echo									>> $1.gp
 echo "set style data lines"						>> $1.gp
 #echo "set style line lw 3"						>> $1.gp
 echo "set title 'Performance Improvment of Jacobi smoothing function'"	>> $1.gp
@@ -30,7 +30,7 @@ echo "set logscale xy 10"						>> $1.gp
 for i in "${!COLORS[@]}"; do
     echo "set style line ($i+1) lc rgb '#${COLORS[$i]}'"		>> $1.gp
 done
-echo ""									>> $1.gp
+echo									>> $1.gp
 
 #echo "Creating $1.dat"
 first=true
@@ -58,19 +58,19 @@ done
 
 # Remove the last (extraneous & error-causing) comma
 #sed -i '$s/,$//' $1.gp
-# End that last line
-echo ""									>> $1.gp
-echo ""									>> $1.gp
+# 2x echo: 1 to end that last line, and 1 for a blank line.
+echo									>> $1.gp
+echo									>> $1.gp
 echo "unset multiplot"							>> $1.gp
 
 mv $1.gp x2p_out/.
 cd x2p_out
 
 #gnuplot -e "filename='$1-$p.dat'" $1.gp
-echo ""
+echo
 echo "~~~ start $1.gp: ~~~"
 cat $1.gp
 echo "~~~~~ end $1.gp ~~~~"
-echo ""
+echo
 gnuplot $1.gp
 #head -n -1 pgo$2.dat > temp.txt ; mv temp.txt pgo$2.dat

@@ -34,6 +34,11 @@ echo
 cat $1.batch
 echo
 echo
-qsub  $1.batch
+qsub  $1.batch > .temp
+cat .temp
+PBS_JOBID=$(tail -n1 <.temp)
+rm .temp
 sleep 3
-qstat -a | grep dutta5
+#qstat -a -u zoller
+# More generic:
+qstat -a $PBS_JOBID

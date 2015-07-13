@@ -4,54 +4,54 @@ HOST=$(shell hostname)
 
 @FC = none
 ifeq ($(PE_ENV),CRAY)
-	#@echo "Using CRAY."
-	FC = ftn
-	#-M 1058
-	FLAGS = -M 124 -O3 -s default64 -hnocaf -hnopgas_runtime -hmpi1 \
-		-hpic #first half of mcmodel=medium equivalent
-		#-hvector3 -hscalar3 \
-		#-hnegmsgs \
-		#-fbacktrace \
-		#-hdevelop -eD \
-		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -D alt_timing -e chmnF -dX -r d -J bin -Q bin
-	  #-hkeepfiles #-S
-	  #-dX: 10,000-variable-module initialize-before-main thing
-	LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
+    #@echo "Using CRAY."
+    FC = ftn
+    #-M 1058
+    FLAGS = -M 124 -O3 -s default64 -hnocaf -hnopgas_runtime -hmpi1 \
+        -hpic #first half of mcmodel=medium equivalent
+        #-hvector3 -hscalar3 \
+        #-hnegmsgs \
+        #-fbacktrace \
+        #-hdevelop -eD \
+        #-Wall -Og #-eI
+    FFLAGS = $(FLAGS) -D alt_timing -e chmnF -dX -r d -J bin -Q bin
+        #-hkeepfiles #-S
+        #-dX: 10,000-variable-module initialize-before-main thing
+    LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
 else ifeq ($(PE_ENV),PGI)
-	#@echo "Using PGI."
-	FC = ftn
-	# TODO: check the -h flags as well as -fbacktrace
-	#-M 1058,124
-        #-default64: instructs compiler wrappers to include 64-bit MPI library
-	FLAGS = -O3 -r8 -mcmodel=medium -Mdalign \
-	  -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
-	  #-hnocaf -hnopgas_runtime -hmpi1
-		#-hvector3 -hscalar3 \
-		#-hnegmsgs \
-		#-fbacktrace \
-		#-hdevelop -eD \
-		#-Wall -Og #-eI
-	FFLAGS = $(FLAGS) -D alt_timing #-e chmnF -dX -r d -J bin -Q bin
-	  #-hkeepfiles #-S
-	  #-dX: 10,000-variable-module initialize-before-main thing
-	LDFLAGS =
+    #@echo "Using PGI."
+    FC = ftn
+    # TODO: check the -h flags as well as -fbacktrace
+    #-M 1058,124
+    #-default64: instructs compiler wrappers to include 64-bit MPI library
+    FLAGS = -O3 -r8 -mcmodel=medium -Mdalign \
+        -Mllalign -Munroll -Kieee -fastsse -Mipa=fast \
+        #-hnocaf -hnopgas_runtime -hmpi1
+        #-hvector3 -hscalar3 \
+        #-hnegmsgs \
+        #-fbacktrace \
+        #-hdevelop -eD \
+        #-Wall -Og #-eI
+    FFLAGS = $(FLAGS) -D alt_timing #-e chmnF -dX -r d -J bin -Q bin
+        #-hkeepfiles #-S
+        #-dX: 10,000-variable-module initialize-before-main thing
+    LDFLAGS =
 else # normal MPI, as on workstations
-	#@echo "Using Workstation compiler."
-	ifeq ($(USER),oychang)
-		FC = mpif77.mpich2
-	else
-		FC = mpif77
-	endif
-	FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 #-DDEBUG_OUT
-    #-fbacktrace #-Wall -Og
-	FFLAGS = -D alt_timing
-	#FCOMP = $(shell $(FC) -show)
-  ifeq ($(word 1, $(shell $(FC) -show)),gfortran)
-	FFLAGS += -D gfortran
-  endif
+    #@echo "Using Workstation compiler."
+    ifeq ($(USER),oychang)
+        FC = mpif77.mpich2
+    else
+        FC = mpif77
+    endif
+    FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 #-DDEBUG_OUT
+        #-fbacktrace #-Wall -Og
+    FFLAGS = -D alt_timing
+    #FCOMP = $(shell $(FC) -show)
+    ifeq ($(word 1, $(shell $(FC) -show)),gfortran)
+        FFLAGS += -D gfortran
+    endif
 #endif
-	LDFLAGS =
+    LDFLAGS =
 endif
 
 ##############################################################################
@@ -100,6 +100,7 @@ ifneq ($(PE_ENV),)
 	cp in.dat $(HOME)/scratch/
 	cp x2p $(HOME)/scratch/
 	cp x2p.pbs $(HOME)/scratch/
+	cp x2p_graph.sh $(HOME)/scratch/
 	cp ping_pong $(HOME)/scratch/
 	cp ping_pong.pbs $(HOME)/scratch/
 	cp bw_ping_pong.gp $(HOME)/scratch/
@@ -120,8 +121,12 @@ endif
 
 runx2p: deploy
 ifneq ($(PE_ENV),)
-	# Assume we are computing.	
-	qsub $(HOME)/scratch/x2p.pbs # proper for computing, even in CCM!
+	# Assume we are computing, thus use qsub (proper even in CCM).
+	qsub $(HOME)/scratch/x2p.pbs > .temp
+	cat .temp
+	PBS_JOBID=$(tail -n1 <.temp)
+	rm .temp
+	./watch_x2p.sh $(PBS_JOBID)
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
