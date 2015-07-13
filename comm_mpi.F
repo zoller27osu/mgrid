@@ -7,7 +7,7 @@ c and Gfortran's ISNAN will be used instead of IEEE_IS_NAN.
 c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !#define gfortran
 
-#define use_tags !if undefined, sources will be used
+!#define use_tags !if undefined, sources will be used
 
 c-----------------------------------------------------------------------
       subroutine init_proc

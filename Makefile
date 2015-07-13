@@ -3,6 +3,7 @@
 HOST=$(shell hostname)
 
 @FC = none
+FFLAGS = -D alt_timing -D use_tags
 ifeq ($(PE_ENV),CRAY)
     #@echo "Using CRAY."
     FC = ftn
@@ -14,7 +15,7 @@ ifeq ($(PE_ENV),CRAY)
         #-fbacktrace \
         #-hdevelop -eD \
         #-Wall -Og #-eI
-    FFLAGS = $(FLAGS) -D alt_timing -e chmnF -dX -r d -J bin -Q bin
+    FFLAGS += -e chmnF -dX -r d -J bin -Q bin
         #-hkeepfiles #-S
         #-dX: 10,000-variable-module initialize-before-main thing
     LDFLAGS = -dynamic #second half of mcmodel=medium equivalent
@@ -32,7 +33,7 @@ else ifeq ($(PE_ENV),PGI)
         #-fbacktrace \
         #-hdevelop -eD \
         #-Wall -Og #-eI
-    FFLAGS = $(FLAGS) -D alt_timing #-e chmnF -dX -r d -J bin -Q bin
+    FFLAGS += #-e chmnF -dX -r d -J bin -Q bin
         #-hkeepfiles #-S
         #-dX: 10,000-variable-module initialize-before-main thing
     LDFLAGS =
@@ -45,7 +46,7 @@ else # normal MPI, as on workstations
     endif
     FLAGS = -O3 -mcmodel=medium -fdefault-real-8 -fdefault-double-8 #-DDEBUG_OUT
         #-fbacktrace #-Wall -Og
-    FFLAGS = -D alt_timing
+    FFLAGS += #
     #FCOMP = $(shell $(FC) -show)
     ifeq ($(word 1, $(shell $(FC) -show)),gfortran)
         FFLAGS += -D gfortran
@@ -67,8 +68,12 @@ all: $(EXECS)
 # Explicitly spell this one out otherwise uses C linker
 x2p: $(X2P_OBJS)
 	$(FC) $(LDFLAGS) -o $@ $^
-comm_mpi.o: comm_mpi.F MGRID
-x2p.o: x2p.F comm_mpi.o
+comm_mpi.o: MGRID comm_mpi.F
+x2p.o: comm_mpi.o x2p.F
+
+#x2pTwisty: comm_mpi.o x2pTwisty.o
+#	$(FC) $(LDFLAGS) -o $@ $^
+#x2pTwisty.o: x2pTwisty.F comm_mpi.o
 
 intraer: intraer.F
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
