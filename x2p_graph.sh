@@ -18,19 +18,19 @@ fi
 
 mkdir -p x2p_out
 > $1.gp
-echo "# Written by x2p.sh"						>> $1.gp
-echo "set terminal x11 enhanced font 'Arial,20' persist"		>> $1.gp
-echo "set output '$1.$output'"						>> $1.gp
-echo "set multiplot layout 1,1"						>> $1.gp
-echo									>> $1.gp
-echo "set style data lines"						>> $1.gp
-#echo "set style line lw 3"						>> $1.gp
-echo "set title 'Performance Improvment of Jacobi smoothing function'"	>> $1.gp
-echo "set logscale xy 10"						>> $1.gp
+echo "# Written by x2p.sh"                                              >> $1.gp
+echo "set terminal x11 enhanced font 'Arial,20' persist"                >> $1.gp
+echo "set output '$1.$output'"                                          >> $1.gp
+echo "set multiplot layout 1,1"                                         >> $1.gp
+echo                                                                    >> $1.gp
+echo "set style data lines"                                             >> $1.gp
+#echo "set style line lw 3"                                             >> $1.gp
+echo "set title 'Performance Improvment of Jacobi smoothing function'"  >> $1.gp
+echo "set logscale xy 10"                                               >> $1.gp
 for i in "${!COLORS[@]}"; do
-    echo "set style line ($i+1) lc rgb '#${COLORS[$i]}'"		>> $1.gp
+    echo "set style line ($i+1) lc rgb '#${COLORS[$i]}'"                >> $1.gp
 done
-echo									>> $1.gp
+echo                                                                    >> $1.gp
 
 #echo "Creating $1.dat"
 first=true
@@ -41,17 +41,17 @@ do
     > $1-$p.dat
     #echo "Adding case $p."
     #grep $p $1.log.$2 | awk -v n="$n" '$2 ~ n' > $p$2-$n.dat
-    grep error$p $1.out 					>> $1-$p.dat
-    #echo "" 							>> $1.dat
+    grep error$p $1.out                                         >> $1-$p.dat
+    #echo ""                                                    >> $1.dat
     mv $1-$p.dat x2p_out/.    
 
     if [ $first ]
     then
-        echo -n "plot '$1-$p.dat' using 10:4 title '$p' ls ($i+1)"	>> $1.gp
+        echo -n "plot '$1-$p.dat' using 10:4 title '$p' ls ($i+1)"      >> $1.gp
         first=""
     else
-        echo ", \\"							>> $1.gp
-        echo -n "     '$1-$p.dat' using 10:4 title '$p' ls ($i+1)"	>> $1.gp
+        echo ", \\"                                                     >> $1.gp
+        echo -n "     '$1-$p.dat' using 10:4 title '$p' ls ($i+1)"      >> $1.gp
     fi
     #gnuplot -e "filename='$p$2.dat'" pgo.gp
 done
@@ -59,9 +59,9 @@ done
 # Remove the last (extraneous & error-causing) comma
 #sed -i '$s/,$//' $1.gp
 # 2x echo: 1 to end that last line, and 1 for a blank line.
-echo									>> $1.gp
-echo									>> $1.gp
-echo "unset multiplot"							>> $1.gp
+echo                                                                    >> $1.gp
+echo                                                                    >> $1.gp
+echo "unset multiplot"                                                  >> $1.gp
 
 mv $1.gp x2p_out/.
 cd x2p_out
