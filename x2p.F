@@ -151,7 +151,9 @@ c     ========   Time Xchange  =========
       call gsync
       time0 = dclock()
       if (nlev.eq.11) then
-          if (nid.eq.OUT_RANK) write(6,*) time0
+          if (nid.eq.OUT_RANK) then
+              write(6,*) time0, mx, my, mz, (lx+2)**(3-1)
+          endif
           !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
       endif
       do ipass=1,npass*20
