@@ -94,7 +94,12 @@ c-----------------------------------------------------------------------
 
       call init_mg(npass,nsmooth,igs,sigma)       ! Get current mg parameters
 
-      if (nlev.le.nlev_last) return !only tests that are strictly increasing in nlev will be run!
+      if (nlev.le.nlev_last) then
+          if (nid.eq.0) then
+              write(6,*) "Skipping since nlev did not increase!"
+          endif
+          return !only tests that are strictly increasing in nlev will be run!
+      endif
       nlev_last = nlev
 
       call reset_flops ! Reset flop counters
@@ -114,6 +119,16 @@ c-----------------------------------------------------------------------
       call rzero     (r ,mm)                    ! clear r
       call rzero     (rf,mm)                    ! clear rf
       call rzero     (ue,mm)                    ! clear ue
+      
+      ! ~~~ if nlev == nlev_max ~~~
+      if (nlev.eq.((lpow-1) + log2(np)/ldim)) then
+          lb=(lx+2)**(3-1)
+          mm=mx*my*mz/min(mx,min(my,mz))
+          write(6,*) nid, ": ", mx, my, mz, mm, lb
+          if (mm.gt.lb) then
+              write(6,*) nid, ": UH-OH!"
+          endif
+      endif
 
       call initu     (ue,n,h,ldim)              ! Exact solution (Get exact solution in ue?)
       call xchange0  (ue,XCHANGE_JGX)           ! share ue
@@ -150,12 +165,10 @@ c     ========   Time Xchange  =========
 #ifdef alt_timing
       call gsync
       time0 = dclock()
-      if (nlev.eq.11) then
-          if (nid.eq.OUT_RANK) then
-              write(6,*) time0, mx, my, mz, (lx+2)**(3-1)
-          endif
+      !if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
           !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
-      endif
+      !endif
       do ipass=1,npass*20
          call xchange0(u,2)
       enddo
