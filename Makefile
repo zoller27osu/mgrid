@@ -128,11 +128,7 @@ endif
 runx2p: deploy
 ifneq ($(PE_ENV),)
 	# Assume we are computing, thus use qsub (proper even in CCM).
-	qsub $(HOME)/scratch/x2p.pbs > .temp
-	cat .temp
-	PBS_JOBID=$(tail -n1 <.temp)
-	rm .temp
-	./watch_x2p.sh $(PBS_JOBID)
+	./watch_x2p.sh $(shell qsub $(HOME)/scratch/x2p.pbs) # qsub should output the PBS_JOBID
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
