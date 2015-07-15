@@ -128,7 +128,11 @@ endif
 runx2p: deploy
 ifneq ($(PE_ENV),)
 	# Assume we are computing, thus use qsub (proper even in CCM).
-	./watch_x2p.sh $(shell qsub $(HOME)/scratch/x2p.pbs) # qsub should output the PBS_JOBID
+	@#only way to set a variable in a Gnumake rule; PBS_JOBID should be qsub's last line of output
+	$(eval PBS_JOBID := $(shell qsub $(HOME)/scratch/x2p.pbs))
+	@echo "$$(qstat -a $(PBS_JOBID))"
+	@echo
+	./watch_x2p.sh $(PBS_JOBID)
     ifneq (,$(findstring nid,$(HOST))) # if in a node (i.e. CCM)
 	# do special graphing stuff
     endif
