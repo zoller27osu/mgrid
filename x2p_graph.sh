@@ -19,9 +19,9 @@ fi
 mkdir -p x2p_out
 > $1.gp
 echo "# Written by x2p.sh"                                              >> $1.gp
-echo "set terminal x11 enhanced font 'Arial,20' persist"                >> $1.gp
+echo "set terminal $output font arial 20"                               >> $1.gp
 echo "set output '$1.$output'"                                          >> $1.gp
-echo "set multiplot layout 1,1"                                         >> $1.gp
+#echo "set multiplot layout 1,1"                                         >> $1.gp
 echo                                                                    >> $1.gp
 echo "set style data lines"                                             >> $1.gp
 #echo "set style line lw 3"                                             >> $1.gp
@@ -61,7 +61,9 @@ done
 # 2x echo: 1 to end that last line, and 1 for a blank line.
 echo                                                                    >> $1.gp
 echo                                                                    >> $1.gp
-echo "unset multiplot"                                                  >> $1.gp
+echo "set terminal x11 enhanced font 'Arial,20' persist"		        >> $1.gp
+echo "replot"								                            >> $1.gp
+#echo "unset multiplot"                                                  >> $1.gp
 
 mv $1.gp x2p_out/.
 cd x2p_out
