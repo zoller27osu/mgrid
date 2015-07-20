@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #PBS -l nodes=1024:ppn=32:xe
-#PBS -l walltime=00:03:00
+#PBS -l walltime=00:10:00
 #PBS -N x2pjob
 #PBS -e $HOME/scratch/x2p$PBS_JOBID.err
 #PBS -o $HOME/scratch/x2p$PBS_JOBID.out

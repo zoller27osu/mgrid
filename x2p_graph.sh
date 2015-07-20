@@ -6,10 +6,10 @@ COLORS=(CC0000 00CC00 0000CC CC00CC 00CCCC CCCC00 000000 CC8000 808080)
 
 #egrep "pgo|pgn0|pgn1|pgn2" $1.log.$2 > pgo$2.dat
 if [ -z "${1}" ]; then
-    echo "Usage: $0 pbs_jobid [output_extension]"
+    echo "Usage: $0 pbs_jobid" #[output_extension]"
     exit
 fi
-output=${2:-png}
+#output=${2:-postscript}
 
 if [ ! -f "$1.out" ]; then
     echo "$1.out not found! Aborting."
@@ -19,13 +19,17 @@ fi
 mkdir -p x2p_out
 > $1.gp
 echo "# Written by x2p.sh"                                              >> $1.gp
-echo "set terminal $output font arial 20"                               >> $1.gp
-echo "set output '$1.$output'"                                          >> $1.gp
+#echo "set terminal $output size 1920,1080 enhanced font 'Arial,20'"     >> $1.gp #pngcairo
+#echo "set terminal $output size 1280,1024 font giant"                   >> $1.gp #png
+echo "set terminal postscript eps enhanced size 1280,1024 'Arial' 22"   >> $1.gp
+echo "set output '$1.eps'"                                              >> $1.gp
 #echo "set multiplot layout 1,1"                                         >> $1.gp
 echo                                                                    >> $1.gp
 echo "set style data lines"                                             >> $1.gp
 #echo "set style line lw 3"                                             >> $1.gp
 echo "set title 'Performance Improvment of Jacobi smoothing function'"  >> $1.gp
+echo "set xlabel 'Number of gridpoints'"                                >> $1.gp
+echo "set ylabel 'Execution time (s)'"                                  >> $1.gp
 echo "set logscale xy 10"                                               >> $1.gp
 for i in "${!COLORS[@]}"; do
     echo "set style line ($i+1) lc rgb '#${COLORS[$i]}'"                >> $1.gp
@@ -61,8 +65,8 @@ done
 # 2x echo: 1 to end that last line, and 1 for a blank line.
 echo                                                                    >> $1.gp
 echo                                                                    >> $1.gp
-echo "set terminal x11 enhanced font 'Arial,20' persist"		        >> $1.gp
-echo "replot"								                            >> $1.gp
+echo "set terminal x11 enhanced font 'Arial,20' persist"                >> $1.gp
+echo "replot"                                                           >> $1.gp
 #echo "unset multiplot"                                                  >> $1.gp
 
 mv $1.gp x2p_out/.
