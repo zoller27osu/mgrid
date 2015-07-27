@@ -18,6 +18,7 @@ then
     if [ -n "${PE_ENV}" ]; then
         #printf %0.f\\n 15.4
         hours=$(echo $2 | awk '{print int((log(log($1)/log(2))/log(2))+0.5);}')
+hours=1
         echo "$0: Calculated time needed: $hours hours."
 
         nekq $1 $2 $hours #> .temp
@@ -43,18 +44,32 @@ fi
 
 for p in "${GRAPHS[@]}"
 do
-    grep $p $1.log.$2 > .tmp
-
     datafile=$p$2.dat
     echo "Creating $datafile"
+
+    OLD_METHOD=""
+    grep $p $1.log.$2 > .tmp
+  if [ "$OLD_METHOD"]; then
+
     > $datafile
     for ((n=1; n<$2; n++))
     do
         #grep $p $1.log.$2 | awk -v n="$n" '$2 ~ n' > $p$2-$n.dat
         #grep $p $1.log.$2 | awk -v n="$n" '$2 ~ n'              >> $datafile
-        awk -v n="$n" '$1 ~ n' .tmp                             >> $datafile
+        line=$(awk -v n="$n" '$1 ~ "^"n"$"' .tmp)
+        if [ -z "$line" ]; then
+            echo "Data for node $n missing, ending $datafile now."
+            break
+        fi
+        echo "$line"                                            >> $datafile
         echo                                                    >> $datafile
     done
+  
+  else
+    #TODO: look into consolidating these into 1 awk command
+    awk '{if (NR>1 && save!=$1) print "";} {save=$1; print;}' .tmp > $datafile
+  fi
+
     rm .tmp
     echo "Done creating $datafile."
 
@@ -126,6 +141,8 @@ do
         echo "~~~~~ end $plotfile ~~~~"
         echo
         gnuplot $plotfile
+
+        #gs -dNOPAUSE -dEPSCrop -sDEVICE=png16m -dGraphicsAlphaBits=4 -dTextAlphaBits=4 -sOutputFile=$1_$2_$i.png $1_$2_$i.eps
     done
 done
-#head -n -1 pgo$2.dat > temp.txt ; mv temp.txt pgo$2.dat
+#head -n -1 pgo$2.dat > temp.txt ; mv temp.txt pgo$2.dat1
