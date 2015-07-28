@@ -1,45 +1,56 @@
 #!/bin/bash
 nodes=$(($2/32))
-hours=$(printf "%02d" ${3:-02})
-echo "$0: using walltime hours = $hours."
+#hours=$(printf "%02d" ${3:-02})
+#echo "$0: using walltime hours = $hours."
+walltime=${3:-"02:30:00"}
+echo "$0: using walltime = $walltime."
 
-rm *batch*
-echo  "#!/bin/bash"                                             > $1.batch
-echo  "#PBS -q normal"                                          >> $1.batch
-echo  "#PBS -l nodes=$nodes:ppn=32:xe"                          >> $1.batch
-echo  "#PBS -l walltime=$hours:30:00"                           >> $1.batch
-echo  "#PBS -N $1"                                              >> $1.batch
-echo  "#PBS -e $1.err"                                          >> $1.batch
-echo  "#PBS -o $1.log.$2"                                       >> $1.batch
-echo  "#PBS -m bea"                                             >> $1.batch
-echo  "#PBS -A jrz"                                             >> $1.batch 
-echo  cd `pwd`                                                  >> $1.batch
-echo  "echo" $1      ">"  SESSION.NAME                          >> $1.batch
-echo  "echo \`pwd\`'/' >> SESSION.NAME"                         >> $1.batch
-echo  rm -f  $1.his1                                            >> $1.batch
-echo  rm -f  $1.sch1                                            >> $1.batch
-echo  rm -f  $1.log1                                            >> $1.batch
-echo  mv $1.log $1.log1                                         >> $1.batch
-echo  mv $1.his $1.his1                                         >> $1.batch
-echo  mv $1.sch $1.sch1                                         >> $1.batch
-echo  rm -f logfile                                             >> $1.batch
-echo  rm -f ioinfo                                              >> $1.batch
-echo  sleep 5                                                   >> $1.batch
-echo  aprun -n $2 "./nek5000"                                   >> $1.batch
-echo  sleep 5                                                   >> $1.batch
-echo  ln $1.log.$2 logfile                                      >> $1.batch
-echo  "exit 0;"                                                 >> $1.batch
+#rm *batch*
+echo  "#!/bin/bash"                                             > $1.pbs
+echo  "#PBS -q normal"                                          >> $1.pbs
+echo  "#PBS -l nodes=$nodes:ppn=32:xe"                          >> $1.pbs
+echo  "#PBS -l walltime=$walltime"                              >> $1.pbs
+echo  "#PBS -N $1"                                              >> $1.pbs
+echo  "#PBS -e $1.err"                                          >> $1.pbs
+echo  "#PBS -o $1.log.$2"                                       >> $1.pbs
+echo  "#PBS -m bea"                                             >> $1.pbs
+echo  "#PBS -A jrz"                                             >> $1.pbs 
+echo  cd `pwd`                                                  >> $1.pbs
+echo  "echo" $1      ">"  SESSION.NAME                          >> $1.pbs
+echo  "echo \`pwd\`'/' >> SESSION.NAME"                         >> $1.pbs
+echo  rm -f  $1.his1                                            >> $1.pbs
+echo  rm -f  $1.sch1                                            >> $1.pbs
+echo  rm -f  $1.log1                                            >> $1.pbs
+echo  mv $1.log $1.log1                                         >> $1.pbs
+echo  mv $1.his $1.his1                                         >> $1.pbs
+echo  mv $1.sch $1.sch1                                         >> $1.pbs
+echo  rm -f logfile                                             >> $1.pbs
+echo  rm -f ioinfo                                              >> $1.pbs
+echo  sleep 5                                                   >> $1.pbs
+echo  aprun -n $2 "./nek5000"                                   >> $1.pbs
+echo  sleep 5                                                   >> $1.pbs
+echo  ln $1.log.$2 logfile                                      >> $1.pbs
+echo  "exit 0;"                                                 >> $1.pbs
+#echo
 echo
+echo " ~~ START $1.pbs ~~ "
+cat $1.pbs
+echo " ~~~ END $1.pbs ~~~ "
 echo
 #echo
-cat $1.batch
-echo
-echo
-qsub  $1.batch > .temp
-cat .temp
-PBS_JOBID=$(tail -n1 <.temp)
-rm .temp
-sleep 3
+
+#qsub  $1.pbs > $0.tmp
+#PBS_JOBID=$(tail -n1 <$0.tmp)
+#echo " ~~ START QSUB OUT ~~ "
+#cat $0.tmp
+#echo " ~~~ END QSUB OUT ~~~ "
+#rm $0.tmp
+#echo
+PBS_JOBID=$(qsub $1.pbs)
+
+sleep 2s
 #qstat -a -u zoller
 # More generic:
 qstat -a $PBS_JOBID
+echo
+echo $PBS_JOBID
