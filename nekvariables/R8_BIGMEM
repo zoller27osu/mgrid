@@ -1,0 +1,68 @@
+#!/bin/bash
+
+#source $(dirname "$(readlink -f "$0")")/checkedConfig
+#source $(dirname -- "$0")/checkedConfig
+source ${BASH_SOURCE%/*}/checkedConfig
+
+#echo "$BIGMEM"
+#shopt -s nocasematch
+#if [[ "$BIGMEM" != "true" ]]; then
+if ! echo "$BIGMEM" | grep -qi '^true$'; then
+  BIGMEM=""
+fi
+#shopt -u nocasematch
+#echo "$BIGMEM"
+
+if [ -z "${R8}" ] || [ "$BIGMEM" ] && [ -z "${BIGMEM_FLAG+set}" ]; then
+  if [ -z "${F77comp}" ]; then
+    source ${BASH_SOURCE%/*}/detectF77compiler
+  fi
+
+  I8="-i8"
+  R8="-r8"
+  BIGMEM_FLAG="-mcmodel=medium"
+  case $F77comp in
+    *ifort*)
+      BIGMEM_FLAG="-mcmodel=medium -shared-intel";;
+    *pgf*|*ftn*)
+      ;;
+    *pathf*|*open*)
+      ;;
+    *gfortran*)
+      I8="-fdefault-integer-8"
+      R8="-fdefault-real-8"
+      ;;
+    *xlf*)
+      I8="-qintegersize=8"
+      R8="-qrealsize=8"
+      BIGMEM_FLAG="-q64"
+      ;;
+    *sunf*)
+      I8="-i8const -xtypemap=integer:64"
+      R8="-r8const -xtypemap=real:64"
+      ;;
+    *)
+      echo "ERROR: Unable to detect underlying compiler!"
+      echo "Please set the following in config:"
+      echo "  R8 - flag(s) to make the REAL datatype have 64 bits (8 bytes) in Fortran."
+      if [ $BIGMEM ]; then
+        echo "  BIGMEM_FLAG - flag(s) to increase the memory model, e.g. -mcmodel=medium"
+        echo "    (or the empty string if this occurs by default)."
+        echo "    Unset BIGMEM if this is not needed."
+      fi
+      #I8=""
+      #R8=""
+      #BIGMEM_FLAG=""
+      exit 1
+      ;;
+  esac
+fi
+
+#F77="$F77"
+#CC="$CC"
+if [ "$BIGMEM" ]; then
+  F77="$F77 $BIGMEM_FLAG" 
+  CC="$CC $BIGMEM_FLAG" 
+fi
+
+#export R8

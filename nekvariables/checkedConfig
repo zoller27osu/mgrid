@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ -z "${F77}" ]; then
+  source ${BASH_SOURCE%/*}/nekconfig
+fi
+
+if [ -z "${F77}" ]; then
+  echo "FATAL ERROR: Specify your Fortran compiler in config!"
+  exit 1
+fi
+
+if [ -z "${CC}" ]; then
+  echo "FATAL ERROR: Specify your C compiler in config!"
+  exit 1
+fi
+
+#which `echo $F77 | awk '{print $1}'` 1>/dev/null
+#if [ $? -ne 0 ]; then
+#if ! which `echo $F77 | awk '{print $1}'` 1>/dev/null; then
+if ! [ -x "$(command -v $F77)" ]; then
+  echo "FATAL ERROR: Cannot find Fortran compiler '$F77'!"
+  exit 1
+fi
+
+#which `echo $CC | awk '{print $1}'` 1>/dev/null
+#if [ $? -ne 0 ]; then
+if ! [ -x "$(command -v $CC)" ]; then
+  echo "FATAL ERROR: Cannot find C compiler '$CC'!"
+  exit 1
+fi

@@ -16,18 +16,26 @@ c     nsmooth - number of times to smooth
 c
 c-----------------------------------------------------------------------
 
+#define OUT_RANK 0
+
 #define XCHANGE_JGX 1
 #define JAC3D_JGX 0
 !#define enable_FBtype
 
-#define verify_xchange
-#define verify_jacobi_alts
+!#define verify_xchange
+!#define verify_jacobi_alts
 #define allow_math_differences
+
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+c When defined and the "verify"s are undefined,
+c the program should act exactly like the original.
+c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!#define alt_timing
 
 !#define conservative_mpi_dtype_recreate
 
 #define NPASS_DEFAULT 100
-#define NSMOOTH_DEFAULT 21
+#define NSMOOTH_DEFAULT 3
 #define IGS_DEFAULT 2
 #define SIGMA_DEFAULT 0.66666666666666667
 
@@ -50,6 +58,10 @@ c-----------------------------------------------------------------------
       call get_proc_mpqr (mp,mq,mr,np,ldim)             ! processor decomp
       call get_proc_ijk  (ip,iq,ir,nid,mp,mq,mr,0,ldim) ! nid = (ip,iq,ir)
 
+!
+      if (nid.eq.OUT_RANK) write(6,*) "MPI_REQ_NULL=",MPI_REQUEST_NULL
+!
+
       do itest=1,2
         icalld = 0
         do i = 1,90 ! parses up to 90 test lines from in.dat
@@ -65,6 +77,7 @@ c-----------------------------------------------------------------------
       subroutine mgrid_tester(nlev_last)
       USE Comm_Funcs, ONLY: dclock
       include 'MGRID'
+      include 'mpif.h'
 
       double precision :: time0, time1
 
@@ -81,7 +94,12 @@ c-----------------------------------------------------------------------
 
       call init_mg(npass,nsmooth,igs,sigma)       ! Get current mg parameters
 
-      if (nlev.le.nlev_last) return
+      if (nlev.le.nlev_last) then
+          if (nid.eq.0) then
+              write(6,*) "Skipping since nlev did not increase!"
+          endif
+          return !only tests that are strictly increasing in nlev will be run!
+      endif
       nlev_last = nlev
 
       call reset_flops ! Reset flop counters
@@ -101,6 +119,16 @@ c-----------------------------------------------------------------------
       call rzero     (r ,mm)                    ! clear r
       call rzero     (rf,mm)                    ! clear rf
       call rzero     (ue,mm)                    ! clear ue
+      
+      ! ~~~ if nlev == nlev_max ~~~
+      if (nlev.eq.((lpow-1) + log2(np)/ldim)) then
+          lb=(lx+2)**(3-1)
+          mm=mx*my*mz/min(mx,min(my,mz))
+          write(6,*) nid, ": ", mx, my, mz, mm, lb
+          if (mm.gt.lb) then
+              write(6,*) nid, ": UH-OH!"
+          endif
+      endif
 
       call initu     (ue,n,h,ldim)              ! Exact solution (Get exact solution in ue?)
       call xchange0  (ue,XCHANGE_JGX)           ! share ue
@@ -112,7 +140,7 @@ c-----------------------------------------------------------------------
       tol   = 1.e-10
 
       lev = nlev
-      nf  = 2**lev
+      nf  = 2**nlev
       n   = nf
       h   = 1./n
       kf  = 0
@@ -137,59 +165,69 @@ c     ========   Time Xchange  =========
 #ifdef alt_timing
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
-      !if (nid.eq.1) write(6,"(F15.3)") time0
-      do ipass=1,npass*200
-         call xchange0(u,1)
-      enddo
-      call gsync
-      time1 = dclock()
-      if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
-
-      call gsync
-      time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
-      !if (nid.eq.1) write(6,"(F15.3)") time0
-      do ipass=1,npass*200
+      !if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      !endif
+      do ipass=1,npass*20
          call xchange0(u,2)
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Y') !xchange_3d_async
+c      DO
+c      ENDDO
+c      call exitt()
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
-      !if (nid.eq.1) write(6,"(F15.3)") time0
-      do ipass=1,npass*200
+      if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      endif
+      do ipass=1,npass*20
+         call xchange0(u,1)
+      enddo
+      call gsync
+      time1 = dclock()
+      if (nid.eq.OUT_RANK) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'D') !xchange_3d
+
+      call gsync
+      time0 = dclock()
+      if (nlev.eq.11) then
+          if (nid.eq.OUT_RANK) write(6,*) time0
+          !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
+      endif
+      do ipass=1,npass*20
          call xchange0(u,0)
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'O') !xchange_3d_old
-      if (nid.eq.1) write(6,*) " "
-#endif alt_timing
+      
+      if (nid.eq.OUT_RANK) write(6,*) " "
+#endif
 
 c     ========    Time Alts    =========
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
-      !if (nid.eq.1) write(6,"(F15.3)") time0
+      !if (nid.eq.OUT_RANK) write(6,*) time0
+      !if (nid.eq.OUT_RANK) write(6,"(F15.3)") time0
       do ipass=1,npass
          call smooth_q (u(kf),r(kf),mx,my,mz,h,sigma,nsmooth,rf,iz)
       enddo
       call gsync
       time1 = dclock()
-      if (nid.eq.1) write(6,*) time0, time1
+      if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'Q') !smooth_q
 
 #ifdef alt_timing
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.OUT_RANK) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,2,ldim)
@@ -197,12 +235,12 @@ c     ========    Time Alts    =========
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A') !jac3alt
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.OUT_RANK) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,3,ldim)
@@ -210,12 +248,12 @@ c     ========    Time Alts    =========
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'C') !jac3cnd
-
+      
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.OUT_RANK) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,4,ldim)
@@ -223,13 +261,13 @@ c     ========    Time Alts    =========
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
-      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'F') !jac3flg
-#endif alt_timing
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
+      call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'A') !jac3alt
+#endif
 
       call gsync
       time0 = dclock()
-      !if (nid.eq.1) write(6,*) time0
+      !if (nid.eq.OUT_RANK) write(6,*) time0
       do ipass=1,npass
          call smooth_m  (u(kf),r(kf),mx,my,mz,h
      &                          ,sigma,nsmooth,rf,iz,0,ldim)
@@ -237,7 +275,7 @@ c     ========    Time Alts    =========
       enddo
       call gsync
       time1 = dclock()
-      !if (nid.eq.1) write(6,*) time0, time1
+      !if (nid.eq.OUT_RANK) write(6,*) time0, time1
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'J') !jac3d
 
       call gsync
@@ -245,7 +283,7 @@ c     ========    Time Alts    =========
       do ipass=1,NPASS_DEFAULT/5 ! Weird NaN stuff in rf happens when this number gets too high!
 
         lev = nlev
-        nf  = 2**lev
+        nf  = 2**nlev
         n   = nf
         h   = 1./n
         kf  = 0
@@ -353,6 +391,7 @@ c        endif
 
       time1 = dclock()
       call errchk (emx,u,ue,ipass-1,time1-time0,dmax,'X')
+      if (nid.eq.OUT_RANK) write(6,*) ""
 c     call outmp(u ,ipass,lev,'SOLN',rf,r)
 c     call outmp(ue,ipass,lev,'EXAC',rf,r)
 
@@ -379,10 +418,10 @@ c-----------------------------------------------------------------------
 
       n3 = nx*ny
       if (ldim.eq.3) n3=n3*nz
-      if (nid.eq.1) then
+      if (nid.eq.OUT_RANK) then
         write(6,*)
-     &"   ii   dmax        emx         time    ldim  nlev  nx    ny   ",
-     &" nz          n3       mp   mq   mr       np          c1"
+     &"   ii   dmax        emx         time    ldim  nlev nx    ny    nz&
+     &           n3       mp   mq   mr       np          c1"
         write(6,1)
      &    ii,dmax,emx,time,ldim,nlev,nx,ny,nz,n3,mp,mq,mr,np,c1
 
@@ -396,10 +435,10 @@ c-----------------------------------------------------------------------
       fflops = (cflops+pflops+rflops+rrlops)
       if (time.gt.0) fflops = fflops/(time*1.e6)
 
-      if (nid.eq.1) then
+      if (nid.eq.OUT_RANK) then
         write(6,*)
-     &"   ii   emx         time        fflops      cflops      pflops ",
-     &"     rflops      rrlops               n3           np      c1"
+     &"   ii   emx         time        fflops      cflops      pflops   &
+     &   rflops      rrlops               n3           np      c1"
         write(6,2)
      &    ii,emx,time,fflops,cflops,pflops,rflops,rrlops,n3,np,c1
 
@@ -640,7 +679,7 @@ c      Assigns destination nid/mtag for xchanges where nid = (ip,iq,ir)
 c      But neighbor is not adjacent processor
 c
 
-c      if (nid.eq.1) write(6,*) lev,nlev,ipass,nx,' level'
+c      if (nid.eq.OUT_RANK) write(6,*) lev,nlev,ipass,nx,' level'
 
        call find_neighb (jpx,ip,mp,nx, 1) ! Right Neighbor
        call get_gid     (gid,jpx, iq, ir,mp,mq,mr)
@@ -871,8 +910,10 @@ c     mx is number of element per proc (0---mx)
 
 #ifdef conservative_mpi_dtype_recreate
       if ((imx.ne.mx).OR.(imy.ne.my).OR.(imz.ne.mz)) then
-        !if (nid.eq.1) write(6,*) nid, ": imx, imy, imz = ", imx, imy, imz
-        !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+        !if (nid.eq.OUT_RANK) then
+        !  write(6,*) nid, ": imx, imy, imz = ", imx, imy, imz
+        !  write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+        !endif
 #endif
         call erase_3d_types()
 #ifdef enable_FBtype
@@ -903,6 +944,7 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine initu(u,n,h,ndim)  ! Fill grid
+      include 'MGRID'
       real u(1) !Why?
 
       if (ndim.eq.2) call initu_2d(u,n,h)
@@ -1265,7 +1307,7 @@ c-----------------------------------------------------------------------
           call smooth_m_jac2d(u,r,mx,my,h,sigma,m,uo,iz)
         elseif (igs.eq.1) then
           call smooth_m_gs_2d(u,r,mx,my,h,sigma,m,iz)
-        else!if (nid.eq.1) then
+        else!if (nid.eq.OUT_RANK) then
           write(6, *) "no smooth_m func ",
      &      "corresponding to igs = ", igs, "!"
           call exitt
@@ -1276,16 +1318,16 @@ c-----------------------------------------------------------------------
         elseif (igs.eq.1) then
           call smooth_m_gs_3d(u,r,mx,my,mz,h,sigma,m,iz)
         elseif (igs.eq.2) then
-          call smooth_m_jac3alt(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (igs.eq.4) then
-          call smooth_m_jac3cnd(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        elseif (igs.eq.3) then
           call smooth_m_jac3flg(u,r,mx,my,mz,h,sigma,m,uo,iz)
+        elseif (igs.eq.3) then
+          call smooth_m_jac3cnd(u,r,mx,my,mz,h,sigma,m,uo,iz)
+        elseif (igs.eq.4) then
+          call smooth_m_jac3alt(u,r,mx,my,mz,h,sigma,m,uo,iz)
         elseif (igs.eq.5) then
           call smooth_m_jac3idx(u,r,mx,my,mz,h,sigma,m,uo,iz)
        ! elseif (igs.eq.6) then
        !   call smooth_m_jac3swp(u,r,mx,my,mz,h,sigma,m,uo,iz)
-        else!if (nid.eq.1) then
+        else!if (nid.eq.OUT_RANK) then
           write(6, *) "no smooth_m func ",
      &      "corresponding to igs = ", igs, "!"
           call exitt
@@ -1404,47 +1446,6 @@ c     ======= In this original version, u never contains any boundary data! ====
       return
       end
 c-----------------------------------------------------------------------
-      subroutine smooth_m_jac3alt (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
-      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
-
-      common /ccflops/ cflops,pflops,rflops,rrlops
-
-      h2       = h*h
-      sa       = sigma/6
-
-      if (izero.eq.0) then
-        do k=1,iz-1
-        do j=1,iy-1
-        do i=1,ix-1
-          u(i,j,k)=sa*h2*r(i,j,k)
-        enddo
-        enddo
-        enddo
-        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
-      endif
-
-      !iters = 0
-      i_end = (m+izero-2+1)/2+1
-      do i_sweep = 2,i_end
-        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
-        !iters = iters+2
-      enddo
-
-      if (MOD(m+izero-2+1,2).ne.0) then
-        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
-        mm1 = (ix+1)*(iy+1)*(iz+1)
-        call copy (u,o,mm1)                     ! u needs newest "u", which is in o
-        !iters = iters+1
-      endif
-
-      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
-
-      !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
-
-      return
-      end
-c-----------------------------------------------------------------------
       subroutine smooth_m_jac3flg (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
       real, dimension(0:ix,0:iy,0:iz) :: u, r, o
       LOGICAL :: f
@@ -1516,6 +1517,47 @@ c-----------------------------------------------------------------------
         mm1 = (ix+1)*(iy+1)*(iz+1)
         call copy (u,o,mm1) ! o was updated last
       endif
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine smooth_m_jac3alt (u,r,ix,iy,iz,h,sigma,m,o,izero) !  Jacobi
+      real, dimension(0:ix,0:iy,0:iz) :: u, r, o
+
+      common /ccflops/ cflops,pflops,rflops,rrlops
+
+      h2       = h*h
+      sa       = sigma/6
+
+      if (izero.eq.0) then
+        do k=1,iz-1
+        do j=1,iy-1
+        do i=1,ix-1
+          u(i,j,k)=sa*h2*r(i,j,k)
+        enddo
+        enddo
+        enddo
+        cflops = cflops + 2*(ix-1)*(iy-1)*(iz-1)
+      endif
+
+      !iters = 0
+      i_end = (m+izero-2+1)/2+1
+      do i_sweep = 2,i_end
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        call jac3d_helper(ix,iy,iz,u,o,r,h2,sa,XCHANGE_JGX) ! prev "u" = o, u will get new "u"
+        !iters = iters+2
+      enddo
+
+      if (MOD(m+izero-2+1,2).ne.0) then
+        call jac3d_helper(ix,iy,iz,o,u,r,h2,sa,XCHANGE_JGX) ! prev "u" = u, o will get new "u"
+        mm1 = (ix+1)*(iy+1)*(iz+1)
+        call copy (u,o,mm1)                     ! u needs newest "u", which is in o
+        !iters = iters+1
+      endif
+
+      cflops = cflops + (11*(ix-1)*(iy-1)*(iz-1))*(m+izero-2+1)
+
+      !write(6,*) "alt - iters: ", iters, " m+izero-1: ", m+izero-1
 
       return
       end
@@ -1794,7 +1836,7 @@ c-----------------------------------------------------------------------
       real ukf(1), rkf(1), rf(1)
       real, dimension(0:mx,0:my,0:mz) :: rfc, v, w
 
-      !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+      !if (nid.eq.OUT_RANK) write(6,*) nid, ": mx, my, mz =", mx, my, mz
 
       mm1 = (mx+1)*(my+1)
       if (ldim.eq.3) then
@@ -1855,7 +1897,7 @@ c-----------------------------------------------------------------------
       real u(1)
       real, dimension(0:mx,0:my,0:mz) :: v, w
 
-      !if (nid.eq.1) write(6,*) nid, ": mx, my, mz = ", mx, my, mz
+      !if (nid.eq.OUT_RANK) write(6,*) nid, ": mx, my, mz =", mx, my, mz
 
       mm1 = (mx+1)*(my+1)
       if (ldim.eq.3) then
@@ -1916,7 +1958,7 @@ c-----------------------------------------------------------------------
           call xchange_3d(u)
         elseif (jgx.eq.2) then
           call xchange_3d_async(u)
-        elseif (nid.eq.1) then
+        elseif (nid.eq.OUT_RANK) then
           write(6, *) nid, ": no xchange0 func ",
      &      "corresponding to jgx = ", jgx, "!"
           call exitt
@@ -1928,8 +1970,9 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
       subroutine xchange_3d_async(u)
       include 'MGRID'
+      include 'mpif.h'
       real u(0:mx,0:my,0:mz)
-      integer reqs(12)
+      integer ireqs(12)
       !do i = 1,12
       !  reqs(i) = MPI_Request_Null
       !enddo
@@ -1943,45 +1986,53 @@ c-----------------------------------------------------------------------
       !      z/
 c     ======   Exchange x-faces   =======
 c     ======    Recv/Send Left    =======
-      reqs(1) = irecv2(mtagrl,u(0,0,0)   ,LRtype,1,nidl)      ! mtags from MGRID
-      reqs(4) = isend1(mtagsl,u(1,0,0)   ,LRtype,1,nidl)      ! nidl from MGRID, null if mtag < 0
+      ireqs(1) = irecv2(mtagrl,u(0,0,0)   ,LRtype,1,nidl)      ! mtags from MGRID
+      ireqs(4) = isend1(mtagsl,u(1,0,0)   ,LRtype,1,nidl)      ! nidl from MGRID, null if mtag < 0
 c     ======    Recv/Send Right   =======
-      reqs(3) = irecv2(mtagrr,u(mx  ,0,0),LRtype,1,nidr)      ! no-op leaving 0's if mtag < 0
-      reqs(2) = isend1(mtagsr,u(mx-1,0,0),LRtype,1,nidr)      ! nidr from MGRID
+      ireqs(3) = irecv2(mtagrr,u(mx  ,0,0),LRtype,1,nidr)      ! no-op leaving 0's if mtag < 0
+      ireqs(2) = isend1(mtagsr,u(mx-1,0,0),LRtype,1,nidr)      ! nidr from MGRID
       !write(6,*) nid, ": LR done"
       !call msgwaitall(reqs,4)
 
 c     ======   Exchange y-faces   =======
 c     ======    Recv/Send Down    =======
-      reqs(5) = irecv2(mtagrd,u(0,0,0)   ,UDtype,1,nidd)      ! mtags from MGRID
-      reqs(8) = isend1(mtagsd,u(0,1,0)   ,UDtype,1,nidd)      ! nidd from MGRID
+      ireqs(5) = irecv2(mtagrd,u(0,0,0)   ,UDtype,1,nidd)      ! mtags from MGRID
+      ireqs(8) = isend1(mtagsd,u(0,1,0)   ,UDtype,1,nidd)      ! nidd from MGRID
 c     ======     Recv/Send Up     =======
-      reqs(7) = irecv2(mtagru,u(0,my  ,0),UDtype,1,nidu)
-      reqs(6) = isend1(mtagsu,u(0,my-1,0),UDtype,1,nidu)      ! nidu from MGRID
+      ireqs(7) = irecv2(mtagru,u(0,my  ,0),UDtype,1,nidu)
+      ireqs(6) = isend1(mtagsu,u(0,my-1,0),UDtype,1,nidu)      ! nidu from MGRID
 
       !call msgwaitall(reqs(5:8),4)
 
 c     ======   Exchange z-faces, no buffers (alignment already matches)   =======
 #ifdef enable_FBtype
 c     ======    Recv/Send Back    =======
-      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,FBtype,1,nidb)   ! mtags from MGRID
-      reqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
+      ireqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,FBtype,1,nidb)   ! mtags from MGRID
+      ireqs(12) = isend1(mtagsb,u(0,0,1)   ,FBtype,1,nidb)   ! nidb from MGRID
 c     ======    Recv/Send Front   =======
-      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),FBtype,1,nidf)
-      reqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
+      ireqs(11) = irecv2(mtagrf,u(0,0,mz  ),FBtype,1,nidf)
+      ireqs(10) = isend1(mtagsf,u(0,0,mz-1),FBtype,1,nidf)   ! nidf from MGRID
 #else
       isz = (mx+1)*(my+1)
 c     ======    Recv/Send Back    =======
-      reqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,mgreal,isz,nidb) ! mtags from MGRID
-      reqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
+      ireqs(9 ) = irecv2(mtagrb,u(0,0,0)   ,mgreal,isz,nidb) ! mtags from MGRID
+      ireqs(12) = isend1(mtagsb,u(0,0,1)   ,mgreal,isz,nidb) ! nidb from MGRID
 c     ======    Recv/Send Front   =======
-      reqs(11) = irecv2(mtagrf,u(0,0,mz  ),mgreal,isz,nidf)
-      reqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
+      ireqs(11) = irecv2(mtagrf,u(0,0,mz  ),mgreal,isz,nidf)
+      ireqs(10) = isend1(mtagsf,u(0,0,mz-1),mgreal,isz,nidf) ! nidf from MGRID
 #endif
 
 c     ======       Wait All       =======
       !call msgwaitall(reqs(9:12),4)
-      call msgwaitall(reqs,12)
+c      if ((nidl.eq.MPI_PROC_NULL.or.mtagrl.lt.0).and.
+c     &   ireqs(1).ne.MPI_REQUEST_NULL) then
+c        write(6,*) nid,": nidl=",nidl,"MPI_REQ_NULL=",MPI_REQUEST_NULL,
+c     &        "ireqs(1)=",ireqs(1),"mtagrl",mtagrl
+c        do
+c        enddo
+c      endif
+c      write(6,*) nid,": ireqs(1)=",ireqs(1),"ireqs(2)=",ireqs(2)
+      call msgwaitall(ireqs,12)
       !do i = 1,12
       !  if (reqs(i).ne.MPI_REQUEST_NULL) call msgwait1(reqs(i))
       !enddo
@@ -1996,7 +2047,7 @@ c-----------------------------------------------------------------------
 
       real u(0:mx,0:my,0:mz)!,buff1(0:1),buff2(0:1),buffo(0:1)
 
-      !if (nid.eq.1) write(6,*) nid, ": ", LRtype, UDtype
+      !if (nid.eq.OUT_RANK) write(6,*) nid, ": ", LRtype, UDtype
       !do
       !enddo
 
@@ -2038,7 +2089,6 @@ c      do j = 0,myz1; u(0,j,0)= buff1(j);! unpack inbound left face      enddo
       !u(0,0:myz1,0) = buff1(0:myz1)
 
       !write(6,*) nid, ": LR done"
-
 
 
 c     ======   Exchange y-faces   =======
@@ -2096,8 +2146,6 @@ c     ======       Wait Down      =======
       !   l=l+1                   ! unpack onto down face
       !enddo
       !enddo
-
-
 
 c     ======   Exchange z-faces, no buffers (alignment already matches)   =======
       isz = (mx+1)*(my+1)!*wdsize                       ! wdsize from MGRID
@@ -2372,7 +2420,7 @@ c     return
 
       call gop(u,w,'+  ',nn)
 
-      if (nid.eq.1) then
+      if (nid.eq.OUT_RANK) then
          write(6,2) lev,name4,n,m,mp,mq,mr,nx,ny,nz
   2      format(i2,'pp ',a4,10i4)
          do k=nz-1,1,-1

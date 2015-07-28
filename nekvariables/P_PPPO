@@ -1,0 +1,38 @@
+#!/bin/bash
+
+if [ -z "${F77}" ]; then
+  source ${BASH_SOURCE%/*}/checkedConfig
+fi
+
+if [ -z "${P+set}" ]; then
+  if [ -z "${F77comp}" ]; then
+    source ${BASH_SOURCE%/*}/detectF77compiler
+  fi
+
+  # assign F77 compiler specific flags
+  case $F77comp in
+    *pgf*|*ftn*)
+      P="-Mpreprocess";;
+    *gfortran*)
+      P="-x f77-cpp-input";;
+    *ifort*)
+      P="-fpconstant -fpp";;
+    *pathf*)
+      P="-cpp -fno-second-underscore";;
+    *xlf*)
+      P="-qdpc=e -qsuffix=cpp=f"
+      PPPO="-WF,"
+      F77="${F77} -qsuppress=cmpmsg"
+      ;;
+  #  *ftn*)
+  #    P="-Mpreprocess";;
+    *)
+      echo "ERROR: Unable to detect compiler!"
+      echo "Please set the following in config:"
+      echo "  P - flag(s) to invoke the C pre-processor (CPP) before compilation."
+      echo "    (or the empty string if this occurs by default)."
+      NOCOMPILE=1
+      read
+      ;;
+  esac
+fi
