@@ -198,9 +198,10 @@ do
     #TODO: look into consolidating the grep line above and this one 1 awk command
     awk '{if (NR>1 && save!=$1) print "";} {save=$1; print;}' .tmp > $datafile
     last_node=$(awk 'END{print $1}' $datafile)
-    if [ ${last_node} -lt $np ]; then
+    max_node=`expr $np - 1`
+    if [ $last_node -lt $max_node ]; then
         echo
-        echo "    WARNING: Data only goes up to node ${last_node} of ${np}!"
+        echo "    WARNING: Data only goes up to node $last_node of $max_node!"
         echo
     fi
     rm .tmp
